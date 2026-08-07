@@ -1,26 +1,31 @@
-# Jack Paton portfolio — editable version
+# Jack Paton portfolio — editable version v2
 
-## The easy way to rearrange the homepage
+This is a plain HTML/CSS/JS website for GitHub Pages.
 
-1. Publish this folder with GitHub Pages.
-2. Visit `/editor.html` on your site.
-3. Click an item, drag it to move it, and drag the blue square to resize it.
-4. Use the panel on the right for image/GIF type, hover image, caption, clickability and links.
-5. Click **Download layout.js**.
-6. In your GitHub repository, upload that new `layout.js` and replace the old one.
+## Public pages
+- `index.html` — editable freeform homepage
+- `gigs.html`
+- `about.html`
+- `cv.html`
 
-The homepage reads all positions/settings from `layout.js`. You normally do not need to edit `index.html` or CSS.
+## Visual editor
+Open `editor.html` in the published site.
 
-## Adding real images and GIFs
+Every homepage object can now be edited visually:
+- text content and links
+- font family, size, weight, italics and underline
+- text/background colour
+- alignment, line height and letter spacing
+- x/y position, width, layer, rotation and opacity
+- image/GIF/video-thumbnail files
+- hover images, click links and captions
+- caption font, size, colour and alignment
+- page background colour and page height
 
-Upload your media files into the `assets` folder in GitHub. Use simple filenames without spaces, for example:
+Drag objects around the canvas and drag the blue square to change width.
 
-- `assets/chandelier-01.jpg`
-- `assets/spoon-flag.gif`
-- `assets/notebook-hover.jpg`
+## Saving
+The editor runs in the browser, so it cannot directly write to GitHub. Click **Download layout.js**, then replace the repository's current `layout.js` with the downloaded file.
 
-Then enter that path in the editor.
-
-## Mobile
-
-Desktop uses your freeform arrangement. On narrow phones, items automatically become a simple vertical stream so the layout remains readable.
+## Adding media
+Upload the real image/GIF to the repository's `assets` folder, then enter its path in the editor, e.g. `assets/chandelier-01.jpg`.

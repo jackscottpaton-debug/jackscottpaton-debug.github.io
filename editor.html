@@ -8,10 +8,11 @@
 </head>
 <body>
   <header class="editor-head">
-    <div><strong>Site editor</strong><span>Drag images. Pull the square handle to resize.</span></div>
+    <div><strong>Site editor</strong><span>Everything on the homepage is an object. Drag it, resize it, restyle it.</span></div>
     <div class="head-actions">
       <a href="index.html" target="_blank">Preview site ↗</a>
-      <button id="add-item" type="button">+ Add item</button>
+      <button id="add-text" type="button">+ Add text</button>
+      <button id="add-item" type="button">+ Add image / media</button>
       <button id="download-layout" type="button" class="primary">Download layout.js</button>
     </div>
   </header>
@@ -21,30 +22,96 @@
       <div class="canvas-tools">
         <label>Page height <input id="page-height" type="number" min="1000" step="100"></label>
         <button id="add-height" type="button">+ 1000px</button>
-        <span id="status">Select an item to edit it.</span>
+        <label>Page colour <input id="page-colour" type="color"></label>
+        <span id="status">Select something to edit it.</span>
       </div>
       <div id="editor-canvas" class="editor-canvas" aria-label="Homepage layout"></div>
     </section>
 
     <aside class="inspector" id="inspector">
-      <h2>Selected item</h2>
-      <p id="no-selection">Click an image on the page.</p>
+      <h2>Selected object</h2>
+      <p id="no-selection">Click any text or image on the page.</p>
+
       <div id="fields" hidden>
-        <label>Title <input id="f-title" type="text"></label>
-        <label>Caption <textarea id="f-caption" rows="3"></textarea></label>
-        <label>Image / GIF file <input id="f-src" type="text" placeholder="assets/photo.jpg"></label>
-        <label>Type
-          <select id="f-type"><option value="image">Still image</option><option value="gif">GIF</option><option value="video">Video thumbnail</option></select>
-        </label>
-        <label>Hover image <input id="f-hover" type="text" placeholder="assets/other-photo.jpg"></label>
-        <small>Leave blank for no hover change.</small>
-        <label class="check"><input id="f-caption-show" type="checkbox"> Show caption</label>
-        <label class="check"><input id="f-clickable" type="checkbox"> Clickable</label>
-        <label>Click / video URL <input id="f-link" type="text" placeholder="https://..."></label>
+        <section id="text-fields" hidden>
+          <label>Text <textarea id="f-text" rows="4"></textarea></label>
+          <label>Link <input id="f-text-link" type="text" placeholder="gigs.html or https://..."></label>
+          <label class="check"><input id="f-new-tab" type="checkbox"> Open link in new tab</label>
+
+          <h3>Typography</h3>
+          <label>Font
+            <input id="f-font-family" type="text" list="font-list" placeholder="Arial, Helvetica, sans-serif">
+            <datalist id="font-list">
+              <option value="Arial, Helvetica, sans-serif">
+              <option value="Helvetica, Arial, sans-serif">
+              <option value="Times New Roman, Times, serif">
+              <option value="Georgia, serif">
+              <option value="Garamond, serif">
+              <option value="Courier New, Courier, monospace">
+              <option value="Verdana, sans-serif">
+              <option value="Trebuchet MS, sans-serif">
+              <option value="monospace">
+              <option value="serif">
+              <option value="sans-serif">
+            </datalist>
+          </label>
+          <div class="numbers three">
+            <label>Font size <input id="f-font-size" type="number" min="5" step="1"></label>
+            <label>Line height <input id="f-line-height" type="number" min="0.5" max="5" step="0.05"></label>
+            <label>Letter space <input id="f-letter-spacing" type="number" step="0.1"></label>
+          </div>
+          <div class="colour-row">
+            <label>Text colour <input id="f-color" type="color"></label>
+            <label>Background <input id="f-background" type="color"></label>
+          </div>
+          <label class="check"><input id="f-background-enabled" type="checkbox"> Use background colour</label>
+          <div class="numbers three">
+            <label>Weight <input id="f-font-weight" type="number" min="100" max="900" step="100"></label>
+            <label>Rotation ° <input id="f-text-rotation" type="number" step="1"></label>
+            <label>Opacity <input id="f-text-opacity" type="number" min="0" max="1" step="0.05"></label>
+          </div>
+          <label>Alignment
+            <select id="f-align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select>
+          </label>
+          <div class="checks-row">
+            <label class="check"><input id="f-italic" type="checkbox"> Italic</label>
+            <label class="check"><input id="f-underline" type="checkbox"> Underline</label>
+          </div>
+        </section>
+
+        <section id="media-fields" hidden>
+          <label>Title <input id="f-title" type="text"></label>
+          <label>Caption <textarea id="f-caption" rows="3"></textarea></label>
+          <label>Image / GIF file <input id="f-src" type="text" placeholder="assets/photo.jpg"></label>
+          <label>Type
+            <select id="f-type"><option value="image">Still image</option><option value="gif">GIF</option><option value="video">Video thumbnail</option></select>
+          </label>
+          <label>Hover image <input id="f-hover" type="text" placeholder="assets/other-photo.jpg"></label>
+          <small>Leave blank for no hover change.</small>
+          <label class="check"><input id="f-caption-show" type="checkbox"> Show caption</label>
+          <label class="check"><input id="f-clickable" type="checkbox"> Clickable</label>
+          <label>Click / video URL <input id="f-link" type="text" placeholder="https://..."></label>
+          <div class="numbers">
+            <label>Rotation ° <input id="f-media-rotation" type="number" step="1"></label>
+            <label>Opacity <input id="f-media-opacity" type="number" min="0" max="1" step="0.05"></label>
+          </div>
+
+          <h3>Caption style</h3>
+          <label>Caption font <input id="f-caption-font" type="text" list="font-list"></label>
+          <div class="numbers">
+            <label>Caption size <input id="f-caption-size" type="number" min="5" step="1"></label>
+            <label>Caption colour <input id="f-caption-color" type="color"></label>
+          </div>
+          <label>Caption alignment
+            <select id="f-caption-align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select>
+          </label>
+        </section>
+
+        <h3>Position & size</h3>
         <div class="numbers">
           <label>X <input id="f-x" type="number" step="1"></label>
           <label>Y <input id="f-y" type="number" step="1"></label>
-          <label>Width <input id="f-width" type="number" step="1" min="50"></label>
+          <label>Width <input id="f-width" type="number" step="1" min="20"></label>
           <label>Layer <input id="f-z" type="number" step="1"></label>
         </div>
         <div class="row-buttons">
@@ -53,11 +120,12 @@
           <button id="delete-item" type="button" class="danger">Delete</button>
         </div>
       </div>
+
       <hr>
       <h2>Adding your real files</h2>
-      <p>Put image/GIF files inside the <code>assets</code> folder on GitHub, then type the filename here, e.g. <code>assets/chandelier-01.jpg</code>.</p>
+      <p>Put image/GIF files inside the <code>assets</code> folder on GitHub, then enter the filename here, e.g. <code>assets/chandelier-01.jpg</code>.</p>
       <h2>Saving</h2>
-      <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. Your public homepage updates automatically.</p>
+      <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. The homepage then updates.</p>
     </aside>
   </main>
 

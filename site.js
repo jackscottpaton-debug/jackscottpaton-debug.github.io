@@ -2,65 +2,124 @@
   const layout = window.PORTFOLIO_LAYOUT;
   const canvas = document.querySelector('#portfolio-canvas');
 
+  const clamp01 = (n) => Math.max(0, Math.min(1, Number(n ?? 1)));
+
+  function applyTextStyles(el, item, scale) {
+    const typeScale = window.innerWidth <= 700 ? 1 : scale;
+    el.style.fontFamily = item.fontFamily || 'Arial, Helvetica, sans-serif';
+    el.style.fontSize = `${(Number(item.fontSize) || 15) * typeScale}px`;
+    el.style.color = item.color || '#111111';
+    el.style.fontWeight = String(item.fontWeight ?? 400);
+    el.style.fontStyle = item.italic ? 'italic' : 'normal';
+    el.style.textDecoration = item.underline ? 'underline' : 'none';
+    el.style.textAlign = item.align || 'left';
+    el.style.lineHeight = String(item.lineHeight ?? 1.25);
+    el.style.letterSpacing = `${(Number(item.letterSpacing) || 0) * typeScale}px`;
+    el.style.opacity = String(clamp01(item.opacity));
+    el.style.transform = `rotate(${Number(item.rotation) || 0}deg)`;
+    el.style.transformOrigin = 'top left';
+    el.style.background = item.backgroundEnabled ? (item.background || '#ffffff') : 'transparent';
+  }
+
+  function makeText(item, scale) {
+    const node = item.link ? document.createElement('a') : document.createElement('div');
+    node.className = 'placed-text';
+    node.dataset.id = item.id;
+    node.dataset.role = item.role || 'text';
+    node.textContent = item.text || '';
+    if (item.link) {
+      node.href = item.link;
+      if (item.newTab || /^https?:/i.test(item.link)) {
+        node.target = '_blank';
+        node.rel = 'noopener';
+      }
+    }
+    node.style.left = `${item.x * scale}px`;
+    node.style.top = `${item.y * scale}px`;
+    node.style.width = `${item.width * scale}px`;
+    node.style.zIndex = item.z || 1;
+    applyTextStyles(node, item, scale);
+    return node;
+  }
+
+  function makeMedia(item, scale) {
+    const article = document.createElement('article');
+    article.className = 'placed-work';
+    article.dataset.id = item.id;
+    article.style.left = `${item.x * scale}px`;
+    article.style.top = `${item.y * scale}px`;
+    article.style.width = `${item.width * scale}px`;
+    article.style.zIndex = item.z || 1;
+    article.style.opacity = String(clamp01(item.opacity));
+    article.style.transform = `rotate(${Number(item.rotation) || 0}deg)`;
+    article.style.transformOrigin = 'top left';
+
+    const figure = document.createElement('figure');
+    if (item.hoverSrc) figure.classList.add('hover-swap');
+
+    const img = document.createElement('img');
+    img.src = item.src;
+    img.alt = item.title || '';
+    img.loading = 'lazy';
+    figure.appendChild(img);
+
+    if (item.hoverSrc) {
+      const hover = document.createElement('img');
+      hover.className = 'hover';
+      hover.src = item.hoverSrc;
+      hover.alt = item.title ? `Alternate image: ${item.title}` : 'Alternate image';
+      hover.loading = 'lazy';
+      figure.appendChild(hover);
+    }
+
+    if (item.type === 'video') {
+      const badge = document.createElement('span');
+      badge.className = 'media-badge';
+      badge.textContent = 'video';
+      figure.appendChild(badge);
+    }
+
+    if (item.showCaption && item.caption) {
+      const caption = document.createElement('figcaption');
+      caption.textContent = item.caption;
+      caption.style.fontFamily = item.captionFontFamily || 'Arial, Helvetica, sans-serif';
+      const captionScale = window.innerWidth <= 700 ? 1 : scale;
+      caption.style.fontSize = `${(Number(item.captionFontSize) || 12) * captionScale}px`;
+      caption.style.color = item.captionColor || '#111111';
+      caption.style.textAlign = item.captionAlign || 'left';
+      figure.appendChild(caption);
+    }
+
+    if (item.clickable && item.link) {
+      const a = document.createElement('a');
+      a.className = 'work-link';
+      a.href = item.link;
+      if (/^https?:/i.test(item.link)) {
+        a.target = '_blank';
+        a.rel = 'noopener';
+      }
+      a.appendChild(figure);
+      article.appendChild(a);
+    } else {
+      article.appendChild(figure);
+    }
+    return article;
+  }
+
   function renderPortfolio() {
     if (!layout || !canvas) return;
     canvas.innerHTML = '';
-    canvas.style.setProperty('--design-ratio', layout.pageHeight / layout.designWidth);
+    document.body.style.background = layout.pageStyle?.background || '#ffffff';
+    const scale = canvas.clientWidth / layout.designWidth;
+    canvas.style.height = `${layout.pageHeight * scale}px`;
 
-    layout.items.forEach((item) => {
-      const article = document.createElement('article');
-      article.className = 'placed-work';
-      article.dataset.id = item.id;
-      article.style.setProperty('--x', item.x / layout.designWidth * 100 + '%');
-      article.style.setProperty('--y', item.y / layout.designWidth * 100 + 'cqw');
-      article.style.setProperty('--w', item.width / layout.designWidth * 100 + '%');
-      article.style.zIndex = item.z || 1;
+    const all = [
+      ...(layout.items || []).map(item => ({kind: 'media', y: item.y, z: item.z || 1, item})),
+      ...(layout.texts || []).map(item => ({kind: 'text', y: item.y, z: item.z || 1, item}))
+    ].sort((a,b) => (a.y-b.y) || (a.z-b.z));
 
-      const figure = document.createElement('figure');
-      if (item.hoverSrc) figure.classList.add('hover-swap');
-
-      const img = document.createElement('img');
-      img.src = item.src;
-      img.alt = item.title || '';
-      img.loading = 'lazy';
-      figure.appendChild(img);
-
-      if (item.hoverSrc) {
-        const hover = document.createElement('img');
-        hover.className = 'hover';
-        hover.src = item.hoverSrc;
-        hover.alt = item.title ? `Alternate image: ${item.title}` : 'Alternate image';
-        hover.loading = 'lazy';
-        figure.appendChild(hover);
-      }
-
-      if (item.type === 'video') {
-        const badge = document.createElement('span');
-        badge.className = 'media-badge';
-        badge.textContent = 'video';
-        figure.appendChild(badge);
-      }
-
-      if (item.showCaption && item.caption) {
-        const caption = document.createElement('figcaption');
-        caption.textContent = item.caption;
-        figure.appendChild(caption);
-      }
-
-      if (item.clickable && item.link) {
-        const a = document.createElement('a');
-        a.className = 'work-link';
-        a.href = item.link;
-        if (/^https?:/i.test(item.link)) {
-          a.target = '_blank';
-          a.rel = 'noopener';
-        }
-        a.appendChild(figure);
-        article.appendChild(a);
-      } else {
-        article.appendChild(figure);
-      }
-      canvas.appendChild(article);
+    all.forEach(entry => {
+      canvas.appendChild(entry.kind === 'text' ? makeText(entry.item, scale) : makeMedia(entry.item, scale));
     });
 
     document.querySelectorAll('.hover-swap').forEach((item) => {
@@ -74,7 +133,5 @@
   }
 
   renderPortfolio();
-  document.querySelectorAll('[data-year]').forEach((el) => {
-    el.textContent = new Date().getFullYear();
-  });
+  window.addEventListener('resize', renderPortfolio);
 })();
