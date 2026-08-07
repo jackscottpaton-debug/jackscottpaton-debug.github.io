@@ -12,7 +12,8 @@
     <div class="head-actions">
       <a href="index.html" target="_blank">Preview site ↗</a>
       <button id="add-text" type="button">+ Add text</button>
-      <button id="add-item" type="button">+ Add image / media</button>
+      <label class="file-button">+ Add image from Mac<input id="add-local-image" type="file" accept="image/*,.gif"></label>
+      <button id="add-item" type="button">+ Blank image</button>
       <button id="download-layout" type="button" class="primary">Download layout.js</button>
     </div>
   </header>
@@ -29,6 +30,17 @@
     </section>
 
     <aside class="inspector" id="inspector">
+      <section class="library-section">
+        <div class="library-head">
+          <h2>Images already on GitHub</h2>
+          <button id="refresh-library" type="button">Refresh</button>
+        </div>
+        <p class="library-help">Click a thumbnail to add it. If an image is already selected, clicking a thumbnail replaces it.</p>
+        <div id="asset-library-status" class="library-status">Loading image library…</div>
+        <div id="asset-library" class="asset-library"></div>
+      </section>
+
+      <hr>
       <h2>Selected object</h2>
       <p id="no-selection">Click any text or image on the page.</p>
 
@@ -80,9 +92,16 @@
         </section>
 
         <section id="media-fields" hidden>
+          <div class="local-file-box">
+            <strong>Replace this image from your Mac</strong>
+            <input id="f-local-file" type="file" accept="image/*,.gif">
+            <p id="prepared-file-note">Choose a large photo here and the editor will make a smaller web copy for you.</p>
+            <button id="download-selected-image" type="button" disabled>Download web copy</button>
+          </div>
+
           <label>Title <input id="f-title" type="text"></label>
           <label>Caption <textarea id="f-caption" rows="3"></textarea></label>
-          <label>Image / GIF file <input id="f-src" type="text" placeholder="assets/photo.jpg"></label>
+          <label>Image / GIF path <input id="f-src" type="text" placeholder="assets/photo.jpg"></label>
           <label>Type
             <select id="f-type"><option value="image">Still image</option><option value="gif">GIF</option><option value="video">Video thumbnail</option></select>
           </label>
@@ -122,10 +141,11 @@
       </div>
 
       <hr>
-      <h2>Adding your real files</h2>
-      <p>Put image/GIF files inside the <code>assets</code> folder on GitHub, then enter the filename here, e.g. <code>assets/chandelier-01.jpg</code>.</p>
+      <h2>Adding new photographs</h2>
+      <p><b>From your Mac:</b> use <b>+ Add image from Mac</b> at the top. Large still photos are automatically resized to a web-friendly WebP. Download that web copy and upload it to the <code>assets</code> folder on GitHub.</p>
+      <p><b>Already on GitHub:</b> use the thumbnail library at the top of this panel. You no longer need to type filenames.</p>
       <h2>Saving</h2>
-      <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. The homepage then updates.</p>
+      <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. Upload any newly prepared image files to <code>assets</code> at the same time.</p>
     </aside>
   </main>
 

@@ -12,8 +12,18 @@
   const noSelection = document.querySelector('#no-selection');
   const textFields = document.querySelector('#text-fields');
   const mediaFields = document.querySelector('#media-fields');
+  const assetLibrary = document.querySelector('#asset-library');
+  const assetLibraryStatus = document.querySelector('#asset-library-status');
+  const localAddInput = document.querySelector('#add-local-image');
+  const localReplaceInput = document.querySelector('#f-local-file');
+  const preparedNote = document.querySelector('#prepared-file-note');
+  const downloadSelectedImage = document.querySelector('#download-selected-image');
   let selectedId = null;
   let gesture = null;
+
+  // Local previews/blobs never go into layout.js. They exist only while this editor tab is open.
+  const temporaryPreviews = new Map();
+  const preparedFiles = new Map();
 
   const q = (s) => document.querySelector(s);
   const common = { x:q('#f-x'), y:q('#f-y'), width:q('#f-width'), z:q('#f-z') };
@@ -73,8 +83,12 @@
   function mediaElement(item){
     const el=document.createElement('article'); el.className='editor-item editor-media'; el.dataset.id=item.id; el.dataset.kind='media';
     const fig=document.createElement('figure');
-    const img=document.createElement('img'); img.src=item.src; img.alt=''; fig.appendChild(img);
-    if(item.hoverSrc){ const h=document.createElement('img'); h.src=item.hoverSrc; h.alt=''; h.className='hover-preview'; fig.appendChild(h); }
+    const img=document.createElement('img');
+    img.src=temporaryPreviews.get(item.id) || item.src;
+    img.alt='';
+    img.addEventListener('error',()=>{ img.style.minHeight='80px'; img.style.background='#eee'; });
+    fig.appendChild(img);
+    if(item.hoverSrc && !temporaryPreviews.has(item.id)){ const h=document.createElement('img'); h.src=item.hoverSrc; h.alt=''; h.className='hover-preview'; fig.appendChild(h); }
     if(item.type!=='image'){ const b=document.createElement('span'); b.className='type-badge'; b.textContent=item.type; fig.appendChild(b); }
     if(item.showCaption&&item.caption){ const c=document.createElement('figcaption'); c.textContent=item.caption; c.style.fontFamily=item.captionFontFamily||'Arial, Helvetica, sans-serif'; c.style.fontSize=`${(Number(item.captionFontSize)||12)*scale()}px`; c.style.color=item.captionColor||'#111111'; c.style.textAlign=item.captionAlign||'left'; fig.appendChild(c); }
     el.appendChild(fig);
@@ -106,8 +120,26 @@
     updateInspector();
   }
 
+  function updatePreparedUI(sel){
+    if(!sel || sel.kind!=='media'){
+      preparedNote.textContent='Choose a large photo here and the editor will make a smaller web copy for you.';
+      downloadSelectedImage.disabled=true;
+      return;
+    }
+    const prepared=preparedFiles.get(sel.item.id);
+    if(prepared){
+      const mb=(prepared.blob.size/1024/1024).toFixed(1);
+      preparedNote.textContent=`Ready: ${prepared.name} (${mb} MB). Download it, then upload it into the assets folder on GitHub.`;
+      downloadSelectedImage.disabled=false;
+    }else{
+      preparedNote.textContent='Choose a large photo here and the editor will make a smaller web copy for you.';
+      downloadSelectedImage.disabled=true;
+    }
+  }
+
   function updateInspector(){
     const sel=selected(); fields.hidden=!sel; noSelection.hidden=!!sel; textFields.hidden=!sel||sel.kind!=='text'; mediaFields.hidden=!sel||sel.kind!=='media';
+    updatePreparedUI(sel);
     if(!sel) return;
     const item=sel.item;
     Object.entries(common).forEach(([key,input])=>input.value=item[key]??'');
@@ -161,7 +193,14 @@
         if(input.type==='checkbox') value=input.checked;
         else if(input.type==='number') value=Number(input.value);
         else value=input.value;
-        sel.item[key]=value; render(); select(sel.item.id);
+        sel.item[key]=value;
+        // If the path was manually changed, stop using an old local preview.
+        if(group===mediaInputs && key==='src' && temporaryPreviews.has(sel.item.id)){
+          URL.revokeObjectURL(temporaryPreviews.get(sel.item.id));
+          temporaryPreviews.delete(sel.item.id);
+          preparedFiles.delete(sel.item.id);
+        }
+        render(); select(sel.item.id);
       });
     });
   }
@@ -171,18 +210,132 @@
   q('#add-height').addEventListener('click',()=>{ layout.pageHeight+=1000; render(); });
   pageColour.addEventListener('input',()=>{ layout.pageStyle.background=pageColour.value; canvas.style.background=pageColour.value; });
 
+  function maxZ(){ return Math.max(0,...layout.items.map(i=>Number(i.z)||0),...layout.texts.map(i=>Number(i.z)||0)); }
+  function visibleInsertPosition(width=500){
+    const rect=canvas.getBoundingClientRect();
+    const viewportY=Math.max(0,-rect.top+120);
+    const y=clamp(Math.round(viewportY/scale()),40,layout.pageHeight-200);
+    return {x:clamp(80,0,layout.designWidth-width),y};
+  }
+  function createMedia(src,title='New image'){
+    const width=500; const pos=visibleInsertPosition(width);
+    const item={id:`item-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,title,caption:'',src,hoverSrc:'',type:'image',clickable:false,link:'',showCaption:false,x:pos.x,y:pos.y,width,z:maxZ()+1,rotation:0,opacity:1,captionFontFamily:'Arial, Helvetica, sans-serif',captionFontSize:12,captionColor:'#111111',captionAlign:'left'};
+    layout.items.push(item); render(); select(item.id); return item;
+  }
+
   q('#add-text').addEventListener('click',()=>{
-    const maxZ=Math.max(0,...layout.items.map(i=>Number(i.z)||0),...layout.texts.map(i=>Number(i.z)||0));
-    const item={id:`text-${Date.now()}`,role:'text',text:'New text',link:'',newTab:false,x:80,y:80,width:400,z:maxZ+1,fontFamily:'Arial, Helvetica, sans-serif',fontSize:28,color:'#111111',background:'#ffffff',backgroundEnabled:false,fontWeight:400,italic:false,underline:false,align:'left',lineHeight:1.2,letterSpacing:0,rotation:0,opacity:1};
+    const pos=visibleInsertPosition(400);
+    const item={id:`text-${Date.now()}`,role:'text',text:'New text',link:'',newTab:false,x:pos.x,y:pos.y,width:400,z:maxZ()+1,fontFamily:'Arial, Helvetica, sans-serif',fontSize:28,color:'#111111',background:'#ffffff',backgroundEnabled:false,fontWeight:400,italic:false,underline:false,align:'left',lineHeight:1.2,letterSpacing:0,rotation:0,opacity:1};
     layout.texts.push(item); render(); select(item.id);
   });
 
-  q('#add-item').addEventListener('click',()=>{
-    const maxZ=Math.max(0,...layout.items.map(i=>Number(i.z)||0),...layout.texts.map(i=>Number(i.z)||0));
-    const n=layout.items.length+1;
-    const item={id:`item-${Date.now()}`,title:`New item ${n}`,caption:'',src:'assets/work-01.jpg',hoverSrc:'',type:'image',clickable:false,link:'',showCaption:false,x:80,y:80,width:500,z:maxZ+1,rotation:0,opacity:1,captionFontFamily:'Arial, Helvetica, sans-serif',captionFontSize:12,captionColor:'#111111',captionAlign:'left'};
-    layout.items.push(item); render(); select(item.id);
+  q('#add-item').addEventListener('click',()=>createMedia('assets/work-01.jpg',`New item ${layout.items.length+1}`));
+
+  function cleanBaseName(filename){
+    return filename.replace(/\.[^.]+$/,'').normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase() || 'image';
+  }
+  function uniqueWebName(filename,ext){
+    const base=cleanBaseName(filename);
+    const stamp=Date.now().toString().slice(-6);
+    return `${base}-${stamp}.${ext}`;
+  }
+  function loadImageElement(file){
+    return new Promise((resolve,reject)=>{
+      const img=new Image(); const url=URL.createObjectURL(file);
+      img.onload=()=>{ URL.revokeObjectURL(url); resolve(img); };
+      img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+      img.src=url;
+    });
+  }
+  async function prepareFile(file){
+    const lower=file.name.toLowerCase();
+    if(lower.endsWith('.gif') || file.type==='image/gif'){
+      return {blob:file,name:uniqueWebName(file.name,'gif'),type:'gif'};
+    }
+    const img=await loadImageElement(file);
+    const maxDim=2400;
+    const ratio=Math.min(1,maxDim/Math.max(img.naturalWidth,img.naturalHeight));
+    const w=Math.max(1,Math.round(img.naturalWidth*ratio));
+    const h=Math.max(1,Math.round(img.naturalHeight*ratio));
+    const canvasEl=document.createElement('canvas'); canvasEl.width=w; canvasEl.height=h;
+    const ctx=canvasEl.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+    const blob=await new Promise(resolve=>canvasEl.toBlob(resolve,'image/webp',0.86));
+    if(!blob) return {blob:file,name:uniqueWebName(file.name,(file.name.split('.').pop()||'jpg').toLowerCase()),type:'image'};
+    return {blob,name:uniqueWebName(file.name,'webp'),type:'image'};
+  }
+  function setPreparedOnItem(item,prepared){
+    if(temporaryPreviews.has(item.id)) URL.revokeObjectURL(temporaryPreviews.get(item.id));
+    const url=URL.createObjectURL(prepared.blob);
+    temporaryPreviews.set(item.id,url);
+    preparedFiles.set(item.id,prepared);
+    item.src=`assets/${prepared.name}`;
+    item.type=prepared.type;
+    item.title=item.title && !item.title.startsWith('New item') && item.title!=='New image' ? item.title : cleanBaseName(prepared.name).replace(/-/g,' ');
+    render(); select(item.id);
+    const mb=(prepared.blob.size/1024/1024).toFixed(1);
+    status.textContent=`Local preview ready: ${prepared.name} (${mb} MB). Click “Download web copy”, then upload that file into GitHub/assets.`;
+  }
+  async function handleLocalFile(file,targetItem=null){
+    if(!file) return;
+    status.textContent='Preparing image…';
+    try{
+      const prepared=await prepareFile(file);
+      const item=targetItem || createMedia(`assets/${prepared.name}`,cleanBaseName(file.name).replace(/-/g,' '));
+      setPreparedOnItem(item,prepared);
+    }catch(err){
+      status.textContent=`Could not prepare that image: ${err.message}`;
+    }
+  }
+  localAddInput.addEventListener('change',async()=>{ const file=localAddInput.files?.[0]; await handleLocalFile(file); localAddInput.value=''; });
+  localReplaceInput.addEventListener('change',async()=>{ const sel=selected(); if(!sel || sel.kind!=='media')return; const file=localReplaceInput.files?.[0]; await handleLocalFile(file,sel.item); localReplaceInput.value=''; });
+  downloadSelectedImage.addEventListener('click',()=>{
+    const sel=selected(); if(!sel || sel.kind!=='media')return; const prepared=preparedFiles.get(sel.item.id); if(!prepared)return;
+    const url=URL.createObjectURL(prepared.blob); const a=document.createElement('a'); a.href=url; a.download=prepared.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1200);
+    status.textContent=`Downloaded ${prepared.name}. Upload it into the assets folder on GitHub.`;
   });
+
+  async function loadAssetLibrary(){
+    assetLibrary.innerHTML='';
+    assetLibraryStatus.textContent='Loading image library…';
+    const host=location.hostname;
+    if(!host.endsWith('.github.io')){
+      assetLibraryStatus.textContent='The thumbnail library works on the live GitHub Pages editor. Local copies can still use “Add image from Mac”.';
+      return;
+    }
+    const owner=host.split('.')[0];
+    const repo=`${owner}.github.io`;
+    try{
+      const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/assets`,{headers:{'Accept':'application/vnd.github+json'}});
+      if(!res.ok) throw new Error(`GitHub returned ${res.status}`);
+      const files=await res.json();
+      const images=files.filter(f=>f.type==='file' && /\.(jpe?g|png|webp|gif|avif)$/i.test(f.name));
+      assetLibraryStatus.textContent=images.length?`${images.length} images found. Click one to use it.`:'No images found in assets yet.';
+      images.sort((a,b)=>a.name.localeCompare(b.name)).forEach(file=>{
+        const btn=document.createElement('button'); btn.type='button'; btn.className='asset-card';
+        if(/\.gif$/i.test(file.name)) btn.classList.add('is-gif'); if(/\.webp$/i.test(file.name)) btn.classList.add('is-webp');
+        const img=document.createElement('img'); img.src=file.download_url; img.alt=file.name; img.loading='lazy';
+        const label=document.createElement('span'); label.textContent=file.name;
+        btn.append(img,label);
+        btn.addEventListener('click',()=>{
+          const path=`assets/${file.name}`;
+          const sel=selected();
+          if(sel && sel.kind==='media'){
+            if(temporaryPreviews.has(sel.item.id)) URL.revokeObjectURL(temporaryPreviews.get(sel.item.id));
+            temporaryPreviews.delete(sel.item.id); preparedFiles.delete(sel.item.id);
+            sel.item.src=path; sel.item.type=/\.gif$/i.test(file.name)?'gif':'image'; render(); select(sel.item.id);
+            status.textContent=`Using ${file.name}.`;
+          }else{
+            const item=createMedia(path,file.name.replace(/\.[^.]+$/,'')); item.type=/\.gif$/i.test(file.name)?'gif':'image'; render(); select(item.id);
+            status.textContent=`Added ${file.name}.`;
+          }
+        });
+        assetLibrary.appendChild(btn);
+      });
+    }catch(err){
+      assetLibraryStatus.textContent=`Could not load the GitHub image list (${err.message}). You can still add from your Mac or type an assets/ filename.`;
+    }
+  }
+  q('#refresh-library').addEventListener('click',loadAssetLibrary);
 
   q('#duplicate').addEventListener('click',()=>{
     const sel=selected(); if(!sel)return; const src=sel.item; const copy={...src,id:`${sel.kind==='text'?'text':'item'}-${Date.now()}`,x:src.x+30,y:src.y+30,z:(src.z||1)+1};
@@ -193,20 +346,28 @@
   q('#delete-item').addEventListener('click',()=>{
     const sel=selected(); if(!sel)return; const label=sel.kind==='text'?(sel.item.text||sel.item.id):(sel.item.title||sel.item.id);
     if(!confirm(`Delete “${label}” from the homepage?`))return;
+    if(temporaryPreviews.has(sel.item.id)) URL.revokeObjectURL(temporaryPreviews.get(sel.item.id));
+    temporaryPreviews.delete(sel.item.id); preparedFiles.delete(sel.item.id);
     if(sel.kind==='text') layout.texts=layout.texts.filter(i=>i.id!==sel.item.id); else layout.items=layout.items.filter(i=>i.id!==sel.item.id);
     selectedId=null; render();
   });
 
   q('#bring-front').addEventListener('click',()=>{
-    const sel=selected(); if(!sel)return; sel.item.z=Math.max(0,...layout.items.map(i=>Number(i.z)||0),...layout.texts.map(i=>Number(i.z)||0))+1; render(); select(sel.item.id);
+    const sel=selected(); if(!sel)return; sel.item.z=maxZ()+1; render(); select(sel.item.id);
   });
 
   q('#download-layout').addEventListener('click',()=>{
     const text='window.PORTFOLIO_LAYOUT = '+JSON.stringify(layout,null,2)+';\n';
     const blob=new Blob([text],{type:'text/javascript'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='layout.js'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
-    status.textContent='Downloaded layout.js — replace the existing layout.js on GitHub to publish these changes.';
+    if(preparedFiles.size){
+      status.textContent=`Downloaded layout.js. You also have ${preparedFiles.size} locally prepared image${preparedFiles.size===1?'':'s'} — download each web copy and upload it to GitHub/assets.`;
+    }else{
+      status.textContent='Downloaded layout.js — replace the existing layout.js on GitHub to publish these changes.';
+    }
   });
 
   window.addEventListener('resize',render);
+  window.addEventListener('beforeunload',()=>temporaryPreviews.forEach(url=>URL.revokeObjectURL(url)));
   render();
+  loadAssetLibrary();
 })();
