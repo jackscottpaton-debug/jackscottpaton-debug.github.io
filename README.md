@@ -18,3 +18,8 @@ The editor cannot directly write files into GitHub because GitHub Pages is a sta
 The homepage editor can now make any text object act as a menu button that scrolls to another object on the same homepage. Select the button text, then choose a target under **Scroll to position on this homepage**. The target follows the object even if you later drag that object elsewhere. External links and mailto links still work when no scroll target is selected.
 
 The homepage/editor now also request a fresh `layout.js` on reload to reduce stale-layout browser caching.
+
+
+## Previewing unsaved changes
+
+Use **Preview current layout** in `editor.html`. It opens `preview.html` and reads the current in-memory editor layout directly, so you do not need to download `layout.js`, commit to GitHub, or wait for GitHub Pages just to check a change. Click the Preview button again whenever you want to refresh the preview with your newest unsaved edits. Local images chosen from your Mac are also previewed from their temporary browser URLs.

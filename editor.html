@@ -10,7 +10,7 @@
   <header class="editor-head">
     <div><strong>Site editor</strong><span>Everything on the homepage is an object. Drag it, resize it, restyle it.</span></div>
     <div class="head-actions">
-      <a href="index.html" target="_blank">Preview site ↗</a>
+      <button id="preview-site" type="button">Preview current layout ↗</button>
       <button id="add-text" type="button">+ Add text</button>
       <label class="file-button">+ Add image from Mac<input id="add-local-image" type="file" accept="image/*,.gif"></label>
       <button id="add-item" type="button">+ Blank image</button>
@@ -166,7 +166,7 @@
       layoutScript.src = `layout.js?v=${stamp}`;
       layoutScript.onload = () => {
         const editorScript = document.createElement('script');
-        editorScript.src = 'editor.js?v=4';
+        editorScript.src = 'editor.js?v=5';
         document.body.appendChild(editorScript);
       };
       document.body.appendChild(layoutScript);

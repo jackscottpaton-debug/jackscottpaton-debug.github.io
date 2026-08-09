@@ -385,6 +385,31 @@
     const sel=selected(); if(!sel)return; sel.item.z=maxZ()+1; render(); select(sel.item.id);
   });
 
+  // Return a deep copy of the *current unsaved* editor state for preview.html.
+  // Locally-added images are swapped to their temporary blob URLs so they can
+  // be previewed before they have been uploaded to GitHub/Cloudinary.
+  window.__getPortfolioPreviewState = () => {
+    const copy = (typeof structuredClone === 'function')
+      ? structuredClone(layout)
+      : JSON.parse(JSON.stringify(layout));
+    (copy.items || []).forEach((item) => {
+      const localUrl = temporaryPreviews.get(item.id);
+      if (localUrl) item.src = localUrl;
+    });
+    return copy;
+  };
+
+  q('#preview-site').addEventListener('click',()=>{
+    const url=`preview.html?v=${Date.now()}`;
+    const win=window.open(url,'portfolio-current-preview');
+    if(win){
+      win.focus();
+      status.textContent='Preview opened from the current editor state. No GitHub upload is needed.';
+    }else{
+      status.textContent='Your browser blocked the preview window. Allow pop-ups for this site and try again.';
+    }
+  });
+
   q('#download-layout').addEventListener('click',()=>{
     const text='window.PORTFOLIO_LAYOUT = '+JSON.stringify(layout,null,2)+';\n';
     const blob=new Blob([text],{type:'text/javascript'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='layout.js'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);

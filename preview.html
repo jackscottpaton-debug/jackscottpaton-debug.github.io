@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jack Paton — current portfolio preview.">
+  <title>Preview — Jack Paton</title>
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body id="top" class="freeform-home">
+  <main>
+    <section id="portfolio-canvas" class="portfolio-canvas" aria-label="Jack Paton — current editor preview"></section>
+  </main>
+  <script>
+    (() => {
+      function loadSite() {
+        const siteScript = document.createElement('script');
+        siteScript.src = `site.js?v=${Date.now()}`;
+        document.body.appendChild(siteScript);
+      }
+
+      try {
+        if (window.opener && typeof window.opener.__getPortfolioPreviewState === 'function') {
+          window.PORTFOLIO_LAYOUT = window.opener.__getPortfolioPreviewState();
+          loadSite();
+          return;
+        }
+      } catch (error) {
+        console.warn('Could not read current editor state:', error);
+      }
+
+      // Fallback: if preview.html is opened directly rather than from the editor,
+      // show the last layout that was actually published.
+      const layoutScript = document.createElement('script');
+      layoutScript.src = `layout.js?v=${Date.now()}`;
+      layoutScript.onload = loadSite;
+      document.body.appendChild(layoutScript);
+    })();
+  </script>
+</body>
+</html>
