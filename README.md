@@ -1,25 +1,9 @@
-# Jack Paton portfolio — editable v3
+NORMAL SCROLL UPDATE v7
 
-Open `editor.html` on the live GitHub Pages site.
+This fixes single-page navigation so jumps scroll the browser window rather than the hidden portfolio canvas. After jumping to CV/About/Gigs/etc., you can simply scroll upward or downward normally with the mouse wheel or trackpad.
 
-## Images
-- The editor automatically shows thumbnails for images already in the repository's `assets` folder.
-- Click a thumbnail to add it; if a media item is selected, clicking a thumbnail replaces it.
-- `+ Add image from Mac` lets you choose a local image. Large still photos are resized to max 2400 px and converted to WebP at web quality. GIFs are kept as GIFs.
-- After choosing a local file, click `Download web copy`, then upload that downloaded file into the GitHub `assets` folder.
+Upload and replace: styles.css
 
-## Publish layout changes
-Click `Download layout.js` in the editor and replace the repository's existing `layout.js` with the downloaded file. Upload any newly prepared images to `assets` at the same time.
+Do not replace layout.js.
 
-The editor cannot directly write files into GitHub because GitHub Pages is a static site and no account token is stored in the editor.
-
-
-## v4: one-page navigation
-The homepage editor can now make any text object act as a menu button that scrolls to another object on the same homepage. Select the button text, then choose a target under **Scroll to position on this homepage**. The target follows the object even if you later drag that object elsewhere. External links and mailto links still work when no scroll target is selected.
-
-The homepage/editor now also request a fresh `layout.js` on reload to reduce stale-layout browser caching.
-
-
-## Previewing unsaved changes
-
-Use **Preview current layout** in `editor.html`. It opens `preview.html` and reads the current in-memory editor layout directly, so you do not need to download `layout.js`, commit to GitHub, or wait for GitHub Pages just to check a change. Click the Preview button again whenever you want to refresh the preview with your newest unsaved edits. Local images chosen from your Mac are also previewed from their temporary browser URLs.
+The existing “↑ top” button can remain as an optional shortcut.
