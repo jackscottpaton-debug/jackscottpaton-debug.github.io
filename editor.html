@@ -47,8 +47,16 @@
       <div id="fields" hidden>
         <section id="text-fields" hidden>
           <label>Text <textarea id="f-text" rows="4"></textarea></label>
-          <label>Link <input id="f-text-link" type="text" placeholder="gigs.html or https://..."></label>
-          <label class="check"><input id="f-new-tab" type="checkbox"> Open link in new tab</label>
+          <label>Scroll to position on this homepage
+            <select id="f-scroll-target">
+              <option value="">— use normal link instead —</option>
+              <option value="__top__">Top of page</option>
+            </select>
+          </label>
+          <small>Choose any text or image on the homepage. If that object moves later, this button will still follow it.</small>
+          <label>External link / email <input id="f-text-link" type="text" placeholder="https://... or mailto:..."></label>
+          <small>This is only used when “Scroll to position” is blank.</small>
+          <label class="check"><input id="f-new-tab" type="checkbox"> Open external link in new tab</label>
 
           <h3>Typography</h3>
           <label>Font
@@ -144,12 +152,25 @@
       <h2>Adding new photographs</h2>
       <p><b>From your Mac:</b> use <b>+ Add image from Mac</b> at the top. Large still photos are automatically resized to a web-friendly WebP. Download that web copy and upload it to the <code>assets</code> folder on GitHub.</p>
       <p><b>Already on GitHub:</b> use the thumbnail library at the top of this panel. You no longer need to type filenames.</p>
+      <h2>Single-page menu links</h2>
+      <p>Select a menu word such as <b>cv</b>, then use <b>Scroll to position on this homepage</b> and choose the object you want it to jump to. This replaces separate CV/About/Gigs pages without needing coordinates.</p>
       <h2>Saving</h2>
       <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. Upload any newly prepared image files to <code>assets</code> at the same time.</p>
     </aside>
   </main>
 
-  <script src="layout.js"></script>
-  <script src="editor.js"></script>
+  <script>
+    (() => {
+      const stamp = Date.now();
+      const layoutScript = document.createElement('script');
+      layoutScript.src = `layout.js?v=${stamp}`;
+      layoutScript.onload = () => {
+        const editorScript = document.createElement('script');
+        editorScript.src = 'editor.js?v=4';
+        document.body.appendChild(editorScript);
+      };
+      document.body.appendChild(layoutScript);
+    })();
+  </script>
 </body>
 </html>

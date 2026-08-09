@@ -22,12 +22,17 @@
   }
 
   function makeText(item, scale) {
-    const node = item.link ? document.createElement('a') : document.createElement('div');
+    const hasScrollTarget = !!item.scrollTarget;
+    const node = (hasScrollTarget || item.link) ? document.createElement('a') : document.createElement('div');
     node.className = 'placed-text';
     node.dataset.id = item.id;
     node.dataset.role = item.role || 'text';
+    node.id = item.id;
     node.textContent = item.text || '';
-    if (item.link) {
+    if (hasScrollTarget) {
+      node.href = item.scrollTarget === '__top__' ? '#top' : `#${item.scrollTarget}`;
+      node.dataset.scrollTarget = item.scrollTarget;
+    } else if (item.link) {
       node.href = item.link;
       if (item.newTab || /^https?:/i.test(item.link)) {
         node.target = '_blank';
@@ -46,6 +51,7 @@
     const article = document.createElement('article');
     article.className = 'placed-work';
     article.dataset.id = item.id;
+    article.id = item.id;
     article.style.left = `${item.x * scale}px`;
     article.style.top = `${item.y * scale}px`;
     article.style.width = `${item.width * scale}px`;
@@ -106,6 +112,25 @@
     return article;
   }
 
+
+  function installSinglePageNavigation() {
+    document.querySelectorAll('a[data-scroll-target]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        const targetId = link.dataset.scrollTarget;
+        event.preventDefault();
+        if (targetId === '__top__') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          history.replaceState(null, '', '#top');
+          return;
+        }
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', `#${targetId}`);
+      });
+    });
+  }
+
   function renderPortfolio() {
     if (!layout || !canvas) return;
     canvas.innerHTML = '';
@@ -121,6 +146,8 @@
     all.forEach(entry => {
       canvas.appendChild(entry.kind === 'text' ? makeText(entry.item, scale) : makeMedia(entry.item, scale));
     });
+
+    installSinglePageNavigation();
 
     document.querySelectorAll('.hover-swap').forEach((item) => {
       item.addEventListener('click', (event) => {

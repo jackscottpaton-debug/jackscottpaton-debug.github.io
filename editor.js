@@ -28,7 +28,7 @@
   const q = (s) => document.querySelector(s);
   const common = { x:q('#f-x'), y:q('#f-y'), width:q('#f-width'), z:q('#f-z') };
   const textInputs = {
-    text:q('#f-text'), link:q('#f-text-link'), newTab:q('#f-new-tab'), fontFamily:q('#f-font-family'),
+    text:q('#f-text'), scrollTarget:q('#f-scroll-target'), link:q('#f-text-link'), newTab:q('#f-new-tab'), fontFamily:q('#f-font-family'),
     fontSize:q('#f-font-size'), color:q('#f-color'), background:q('#f-background'), backgroundEnabled:q('#f-background-enabled'),
     fontWeight:q('#f-font-weight'), italic:q('#f-italic'), underline:q('#f-underline'), align:q('#f-align'),
     lineHeight:q('#f-line-height'), letterSpacing:q('#f-letter-spacing'), rotation:q('#f-text-rotation'), opacity:q('#f-text-opacity')
@@ -137,6 +137,34 @@
     }
   }
 
+  function refreshScrollTargetOptions(currentValue='') {
+    const select = textInputs.scrollTarget;
+    if (!select) return;
+    const previous = currentValue || select.value || '';
+    select.innerHTML = '';
+    const normal = document.createElement('option');
+    normal.value = '';
+    normal.textContent = '— use normal link instead —';
+    select.appendChild(normal);
+    const top = document.createElement('option');
+    top.value = '__top__';
+    top.textContent = 'Top of page';
+    select.appendChild(top);
+
+    const choices = [
+      ...layout.texts.map(item => ({id:item.id, y:Number(item.y)||0, label:`TEXT — ${(item.text || item.id).replace(/\s+/g,' ').slice(0,55)}`})),
+      ...layout.items.map(item => ({id:item.id, y:Number(item.y)||0, label:`IMAGE — ${(item.title || item.id).slice(0,55)}`}))
+    ].filter(choice => choice.id !== selectedId).sort((a,b)=>a.y-b.y);
+
+    choices.forEach(choice => {
+      const option = document.createElement('option');
+      option.value = choice.id;
+      option.textContent = `${Math.round(choice.y)}px · ${choice.label}`;
+      select.appendChild(option);
+    });
+    select.value = previous;
+  }
+
   function updateInspector(){
     const sel=selected(); fields.hidden=!sel; noSelection.hidden=!!sel; textFields.hidden=!sel||sel.kind!=='text'; mediaFields.hidden=!sel||sel.kind!=='media';
     updatePreparedUI(sel);
@@ -144,6 +172,7 @@
     const item=sel.item;
     Object.entries(common).forEach(([key,input])=>input.value=item[key]??'');
     if(sel.kind==='text'){
+      refreshScrollTargetOptions(item.scrollTarget || '');
       Object.entries(textInputs).forEach(([key,input])=>{
         if(input.type==='checkbox') input.checked=!!item[key]; else input.value=item[key]??'';
       });
@@ -225,7 +254,7 @@
 
   q('#add-text').addEventListener('click',()=>{
     const pos=visibleInsertPosition(400);
-    const item={id:`text-${Date.now()}`,role:'text',text:'New text',link:'',newTab:false,x:pos.x,y:pos.y,width:400,z:maxZ()+1,fontFamily:'Arial, Helvetica, sans-serif',fontSize:28,color:'#111111',background:'#ffffff',backgroundEnabled:false,fontWeight:400,italic:false,underline:false,align:'left',lineHeight:1.2,letterSpacing:0,rotation:0,opacity:1};
+    const item={id:`text-${Date.now()}`,role:'text',text:'New text',scrollTarget:'',link:'',newTab:false,x:pos.x,y:pos.y,width:400,z:maxZ()+1,fontFamily:'Arial, Helvetica, sans-serif',fontSize:28,color:'#111111',background:'#ffffff',backgroundEnabled:false,fontWeight:400,italic:false,underline:false,align:'left',lineHeight:1.2,letterSpacing:0,rotation:0,opacity:1};
     layout.texts.push(item); render(); select(item.id);
   });
 

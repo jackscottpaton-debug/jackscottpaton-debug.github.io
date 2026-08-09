@@ -12,7 +12,18 @@
   <main>
     <section id="portfolio-canvas" class="portfolio-canvas" aria-label="Jack Paton — selected work"></section>
   </main>
-  <script src="layout.js"></script>
-  <script src="site.js"></script>
+  <script>
+    (() => {
+      const stamp = Date.now();
+      const layoutScript = document.createElement('script');
+      layoutScript.src = `layout.js?v=${stamp}`;
+      layoutScript.onload = () => {
+        const siteScript = document.createElement('script');
+        siteScript.src = 'site.js?v=4';
+        document.body.appendChild(siteScript);
+      };
+      document.body.appendChild(layoutScript);
+    })();
+  </script>
 </body>
 </html>
