@@ -14,7 +14,8 @@
       <button id="add-text" type="button">+ Add text</button>
       <label class="file-button">+ Add image from Mac<input id="add-local-image" type="file" accept="image/*,.gif"></label>
       <button id="add-item" type="button">+ Blank image</button>
-      <button id="download-layout" type="button" class="primary">Download layout.js</button>
+      <button id="download-layout" type="button">Download layout.js</button>
+      <button id="publish-layout" type="button" class="primary">Publish to website</button>
     </div>
   </header>
 
@@ -154,8 +155,15 @@
       <p><b>Already on GitHub:</b> use the thumbnail library at the top of this panel. You no longer need to type filenames.</p>
       <h2>Single-page menu links</h2>
       <p>Select a menu word such as <b>cv</b>, then use <b>Scroll to position on this homepage</b> and choose the object you want it to jump to. This replaces separate CV/About/Gigs pages without needing coordinates.</p>
-      <h2>Saving</h2>
-      <p>Press <b>Download layout.js</b>. On GitHub, replace the old <code>layout.js</code> with the downloaded one. Upload any newly prepared image files to <code>assets</code> at the same time.</p>
+      <h2>Publishing</h2>
+      <div class="local-file-box" id="github-publish-box">
+        <strong>Publish directly to GitHub</strong>
+        <p>Paste a fine-grained GitHub token here once per browser tab. It stays in this tab only and is never written into <code>layout.js</code> or your repository.</p>
+        <label>GitHub token <input id="github-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+        <small>Give the token access only to <b>jackscottpaton-debug.github.io</b>, with repository permission <b>Contents: Read and write</b>.</small>
+        <p id="publish-status">Then use <b>Publish to website</b> at the top. The download button remains as a backup.</p>
+      </div>
+      <p><b>Backup method:</b> Press <b>Download layout.js</b> and replace the old file manually on GitHub.</p>
     </aside>
   </main>
 
@@ -166,7 +174,7 @@
       layoutScript.src = `layout.js?v=${stamp}`;
       layoutScript.onload = () => {
         const editorScript = document.createElement('script');
-        editorScript.src = 'editor.js?v=5';
+        editorScript.src = 'editor.js?v=8';
         document.body.appendChild(editorScript);
       };
       document.body.appendChild(layoutScript);

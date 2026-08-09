@@ -1,9 +1,14 @@
-NORMAL SCROLL UPDATE v7
+# Publish-button update v8
 
-This fixes single-page navigation so jumps scroll the browser window rather than the hidden portfolio canvas. After jumping to CV/About/Gigs/etc., you can simply scroll upward or downward normally with the mouse wheel or trackpad.
+Upload `editor.html` and `editor.js` to the root of the GitHub Pages repository, replacing the existing files. Do not replace `layout.js`.
 
-Upload and replace: styles.css
+## One-time GitHub setup
+Create a fine-grained personal access token in GitHub:
+- Resource owner: `jackscottpaton-debug`
+- Repository access: **Only select repositories** → `jackscottpaton-debug.github.io`
+- Repository permissions → **Contents: Read and write**
+- No other write permissions are needed.
 
-Do not replace layout.js.
+Paste the token into the editor's **GitHub token** box. It is kept in `sessionStorage`, so it survives refreshes in that tab but is not written into the website files. Closing the browser tab clears it.
 
-The existing “↑ top” button can remain as an optional shortcut.
+Then **Publish to website** commits the current editor layout directly as `layout.js` on the `main` branch. GitHub Pages deploys from that commit automatically.

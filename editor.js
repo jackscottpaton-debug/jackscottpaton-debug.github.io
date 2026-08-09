@@ -18,6 +18,13 @@
   const localReplaceInput = document.querySelector('#f-local-file');
   const preparedNote = document.querySelector('#prepared-file-note');
   const downloadSelectedImage = document.querySelector('#download-selected-image');
+  const githubTokenInput = document.querySelector('#github-token');
+  const publishButton = document.querySelector('#publish-layout');
+  const publishStatus = document.querySelector('#publish-status');
+  const GITHUB_OWNER = 'jackscottpaton-debug';
+  const GITHUB_REPO = 'jackscottpaton-debug.github.io';
+  const GITHUB_BRANCH = 'main';
+  const GITHUB_FILE = 'layout.js';
   let selectedId = null;
   let gesture = null;
 
@@ -410,8 +417,102 @@
     }
   });
 
+  function layoutFileText(){
+    return 'window.PORTFOLIO_LAYOUT = '+JSON.stringify(layout,null,2)+';\n';
+  }
+
+  function utf8ToBase64(text){
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    const chunk = 0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+      binary += String.fromCharCode(...bytes.subarray(i, i+chunk));
+    }
+    return btoa(binary);
+  }
+
+  function friendlyGithubError(statusCode, data){
+    const message = data && data.message ? data.message : `GitHub returned ${statusCode}`;
+    if(statusCode===401) return 'GitHub did not accept that token. Check that it is copied completely and has not expired.';
+    if(statusCode===403) return 'GitHub refused the publish. The token needs access to this repository with Contents: Read and write.';
+    if(statusCode===404) return 'GitHub could not find layout.js or the repository with this token. Check the repository access on the token.';
+    if(statusCode===409) return 'GitHub reported a file conflict. Try Publish again; the editor will fetch the newest file version first.';
+    return message;
+  }
+
+  async function publishLayout(){
+    const token=(githubTokenInput?.value||'').trim();
+    if(!token){
+      status.textContent='Add your GitHub token in the Publishing box on the right first.';
+      publishStatus.textContent='A GitHub token is required before the editor can publish.';
+      githubTokenInput?.focus();
+      githubTokenInput?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+
+    if(temporaryPreviews.size){
+      const ok=confirm('You have image(s) loaded only from this Mac. Publish will save the layout, but those local image files cannot appear on the live site until you replace them with Cloudinary URLs or upload them. Publish anyway?');
+      if(!ok) return;
+    }
+
+    publishButton.disabled=true;
+    publishButton.textContent='Publishing…';
+    status.textContent='Publishing the current editor layout directly to GitHub…';
+    publishStatus.textContent='Connecting to GitHub…';
+
+    const api=`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+    const headers={
+      'Accept':'application/vnd.github+json',
+      'Authorization':`Bearer ${token}`,
+      'X-GitHub-Api-Version':'2022-11-28'
+    };
+
+    try{
+      const currentResponse=await fetch(`${api}?ref=${encodeURIComponent(GITHUB_BRANCH)}&t=${Date.now()}`,{headers,cache:'no-store'});
+      const currentData=await currentResponse.json().catch(()=>({}));
+      if(!currentResponse.ok) throw {github:true,status:currentResponse.status,data:currentData};
+
+      const body={
+        message:'Update website layout',
+        content:utf8ToBase64(layoutFileText()),
+        sha:currentData.sha,
+        branch:GITHUB_BRANCH
+      };
+      const updateResponse=await fetch(api,{
+        method:'PUT',
+        headers:{...headers,'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      const updateData=await updateResponse.json().catch(()=>({}));
+      if(!updateResponse.ok) throw {github:true,status:updateResponse.status,data:updateData};
+
+      publishStatus.textContent='Published successfully. GitHub Pages is deploying this new layout now.';
+      status.textContent='Published ✓ — your current editor layout is now committed to GitHub. The live site should update shortly.';
+    }catch(err){
+      const msg=err?.github ? friendlyGithubError(err.status,err.data) : (err?.message||'Could not connect to GitHub.');
+      publishStatus.textContent=`Publish failed: ${msg}`;
+      status.textContent=`Publish failed — ${msg}`;
+      console.error(err);
+    }finally{
+      publishButton.disabled=false;
+      publishButton.textContent='Publish to website';
+    }
+  }
+
+  if(githubTokenInput){
+    try{ githubTokenInput.value=sessionStorage.getItem('portfolioGithubToken')||''; }catch(_e){}
+    githubTokenInput.addEventListener('input',()=>{
+      try{
+        const value=githubTokenInput.value.trim();
+        if(value) sessionStorage.setItem('portfolioGithubToken',value);
+        else sessionStorage.removeItem('portfolioGithubToken');
+      }catch(_e){}
+    });
+  }
+  publishButton?.addEventListener('click',publishLayout);
+
   q('#download-layout').addEventListener('click',()=>{
-    const text='window.PORTFOLIO_LAYOUT = '+JSON.stringify(layout,null,2)+';\n';
+    const text=layoutFileText();
     const blob=new Blob([text],{type:'text/javascript'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='layout.js'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     if(preparedFiles.size){
       status.textContent=`Downloaded layout.js. You also have ${preparedFiles.size} locally prepared image${preparedFiles.size===1?'':'s'} — download each web copy and upload it to GitHub/assets.`;
