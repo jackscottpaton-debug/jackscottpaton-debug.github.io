@@ -350,7 +350,8 @@ window.PORTFOLIO_LAYOUT = {
       "lineHeight": 1.2,
       "letterSpacing": 0,
       "rotation": 0,
-      "opacity": 1
+      "opacity": 1,
+      "scrollTarget": "work-02"
     },
     {
       "id": "text-nav-cv",
