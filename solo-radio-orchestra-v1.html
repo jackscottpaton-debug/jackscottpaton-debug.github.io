@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Solo Radio Orchestra</title>
+<style>
+:root{--bg:#fff;--fg:#111;--muted:#777;--line:#111;--pale:#bbb}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:Arial,Helvetica,sans-serif}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font-family:Arial,Helvetica,sans-serif}
+.topbar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid var(--line);min-height:34px}
+.topbar button{appearance:none;background:#fff;color:#111;border:0;border-right:1px solid var(--line);border-radius:0;padding:8px 11px;font:12px/1 Arial,Helvetica,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.topbar button:active,.topbar button.active{background:#111;color:#fff}
+.topbar button:disabled{color:#bbb;background:#fff}
+.statusbar{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:7px 10px;font-size:11px;line-height:1.2;text-transform:uppercase}
+.intro{padding:18px 10px 22px;border-bottom:1px solid var(--line)}
+.kicker{font-size:10px;text-transform:uppercase;margin-bottom:8px}
+.title{font-size:34px;line-height:1;letter-spacing:-1.4px;max-width:900px}
+.note{margin-top:7px;font-size:12px;color:var(--muted);max-width:760px;line-height:1.35}
+.players{width:100%}
+.player{display:grid;grid-template-columns:minmax(130px,.7fr) minmax(220px,1.5fr) 90px 86px;border-bottom:1px solid var(--line);min-height:68px}
+.player>div,.player>button{padding:10px;border:0;border-right:1px solid var(--line);background:#fff;color:#111;text-align:left}
+.player>button:last-child,.player>div:last-child{border-right:0}
+.instrument{font-size:19px;line-height:1.05;letter-spacing:-.35px;display:flex;align-items:center}
+.stationwrap{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.stationname{font-size:12px;line-height:1.2;overflow-wrap:anywhere}
+.streammeta{font-size:10px;color:var(--muted);margin-top:5px;text-transform:uppercase;overflow-wrap:anywhere}
+.state{font:10px/1.2 Arial,Helvetica,sans-serif;text-transform:uppercase;display:flex;align-items:center}
+.player .mute{appearance:none;border-radius:0;font:11px/1 Arial,Helvetica,sans-serif;text-transform:uppercase;text-align:center;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.player .mute:hover,.player .mute.active{background:#111;color:#fff}
+.player .mute:disabled{color:#bbb;cursor:default;background:#fff}
+.player.is-muted .instrument,.player.is-muted .stationwrap{color:#aaa}
+.player.is-muted .streammeta{color:#bbb}
+.footer{padding:9px 10px 36px;font-size:10px;line-height:1.35;color:var(--muted)}
+@media(max-width:620px){
+  .title{font-size:28px}
+  .player{grid-template-columns:1fr 82px 78px}
+  .instrument{grid-column:1 / 2;padding-bottom:2px!important}
+  .stationwrap{grid-column:1 / 2;padding-top:2px!important}
+  .state{grid-column:2;grid-row:1 / span 2;border-left:1px solid var(--line)}
+  .mute{grid-column:3;grid-row:1 / span 2}
+  .player>div,.player>button{border-right:0}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button id="start" disabled>START ALL</button>
+  <button id="muteAll" disabled>MUTE ALL</button>
+  <button id="stop" disabled>STOP</button>
+</div>
+
+<div class="statusbar">
+  <span id="status">Resolving streams…</span>
+  <span><span id="readyCount">0 / 6 READY</span> · <span id="audibleCount">0 AUDIBLE</span></span>
+</div>
+
+<div class="intro">
+  <div class="kicker">SOLO RADIO ORCHESTRA — TEST 01</div>
+  <div class="title">Six broadcasts, one accidental band.</div>
+  <div class="note">All six use the same browser volume setting. Muting a part does not stop its stream: unmute it and you rejoin the broadcast wherever it has reached.</div>
+</div>
+
+<div class="players" id="players"></div>
+<div class="footer">Piano · classical guitar · harp · flute · singing bowls · a cappella. Stream availability belongs to the original broadcasters and can change.</div>
+
+<script>
+const API=["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
+
+const specs=[
+  {
+    id:"piano", instrument:"PIANO", station:"Whisperings — Solo Piano Radio",
+    direct:["https://live.streamguys1.com/hybrid64"], detail:"64 kbps MP3 · StreamGuys"
+  },
+  {
+    id:"guitar", instrument:"CLASSICAL GUITAR", station:"Paul Erickson — Classical Guitar Underground",
+    search:["Paul Erickson Classical Guitar Underground","Classical Guitar Underground"], detail:"live radio · endpoint resolved on load"
+  },
+  {
+    id:"harp", instrument:"HARP", station:"Radio Art — Solo Harp",
+    search:["Radio Art Solo Harp","Radio Art - Solo Harp"], detail:"96 kbps MP3 · Radio Art"
+  },
+  {
+    id:"flute", instrument:"FLUTE", station:"Radio Art — Solo Flute",
+    search:["Radio Art Solo Flute","Radio Art - Solo Flute"], detail:"96 kbps MP3 · Radio Art"
+  },
+  {
+    id:"bowls", instrument:"SINGING BOWLS", station:"Longplayer — Jem Finer",
+    direct:["https://icecast.spc.org:8000/longplayer","http://icecast.spc.org:8000/longplayer"], detail:"continuous live stream · Trinity Buoy Wharf"
+  },
+  {
+    id:"voice", instrument:"A CAPPELLA", station:"Acaville Radio",
+    direct:["https://acaville.out.airtime.pro:8000/acaville_a"], detail:"128 kbps MP3 · Airtime"
+  }
+];
+
+const $=id=>document.getElementById(id);
+const state={started:false, muteAll:false};
+
+function build(){
+  const root=$("players");
+  specs.forEach(s=>{
+    const row=document.createElement("div");
+    row.className="player";
+    row.id=`row-${s.id}`;
+    row.innerHTML=`
+      <div class="instrument">${s.instrument}</div>
+      <div class="stationwrap"><div class="stationname">${s.station}</div><div class="streammeta" id="meta-${s.id}">${s.detail}</div></div>
+      <div class="state" id="state-${s.id}">RESOLVING</div>
+      <button class="mute" id="mute-${s.id}" disabled>MUTE</button>`;
+    root.appendChild(row);
+    const audio=new Audio();
+    audio.preload="none";
+    audio.volume=1;
+    audio.muted=false;
+    audio.playsInline=true;
+    s.audio=audio;
+    s.ready=false;
+    s.playing=false;
+    s.muted=false;
+    s.candidateIndex=0;
+    audio.addEventListener("playing",()=>{s.playing=true;setState(s,s.muted?"MUTED":"LIVE");updateCounts()});
+    audio.addEventListener("waiting",()=>{if(s.playing)setState(s,"BUFFERING")});
+    audio.addEventListener("stalled",()=>{if(s.playing)setState(s,"BUFFERING")});
+    audio.addEventListener("error",()=>handleAudioError(s));
+    $("mute-"+s.id).addEventListener("click",()=>toggleMute(s));
+  });
+}
+
+function setState(s,text){$("state-"+s.id).textContent=text}
+
+function setReady(s,urls,sourceLabel){
+  s.urls=[...new Set(urls.filter(Boolean))];
+  if(!s.urls.length){setState(s,"NO STREAM");return}
+  s.ready=true;
+  s.candidateIndex=0;
+  s.audio.src=s.urls[0];
+  $("mute-"+s.id).disabled=false;
+  setState(s,"READY");
+  if(sourceLabel) $("meta-"+s.id).textContent=sourceLabel;
+  updateCounts();
+}
+
+function streamScore(station,query){
+  const name=(station.name||"").toLowerCase();
+  const q=query.toLowerCase();
+  let score=0;
+  if(name===q) score+=100;
+  if(name.includes(q)||q.includes(name)) score+=50;
+  if((station.url_resolved||station.url||"").startsWith("https://")) score+=25;
+  if(Number(station.lastcheckok)===1) score+=20;
+  if(Number(station.hls)!==1) score+=5;
+  return score;
+}
+
+async function resolveSearch(s){
+  let found=[];
+  for(const base of API){
+    for(const q of s.search){
+      try{
+        const url=base+"/json/stations/search?name="+encodeURIComponent(q)+"&hidebroken=true&limit=20";
+        const r=await fetch(url);
+        if(!r.ok) continue;
+        const data=await r.json();
+        found.push(...data.map(x=>({x,q})));
+      }catch(e){}
+    }
+    if(found.length) break;
+  }
+  if(!found.length){setState(s,"NOT FOUND");updateCounts();return}
+  found.sort((a,b)=>streamScore(b.x,b.q)-streamScore(a.x,a.q));
+  const viable=found.map(o=>o.x).filter(x=>Number(x.lastcheckok)===1);
+  const urls=[];
+  viable.forEach(x=>{const u=x.url_resolved||x.url;if(u&&u.startsWith("https://"))urls.push(u)});
+  viable.forEach(x=>{const u=x.url_resolved||x.url;if(u&&!urls.includes(u))urls.push(u)});
+  const best=viable[0]||found[0].x;
+  setReady(s,urls,`${best.bitrate||"?"} kbps ${(best.codec||"").toUpperCase()} · endpoint resolved via Radio Browser`);
+}
+
+async function resolveAll(){
+  build();
+  const jobs=specs.map(async s=>{
+    if(s.direct) setReady(s,s.direct,s.detail);
+    else await resolveSearch(s);
+  });
+  await Promise.allSettled(jobs);
+  const n=specs.filter(s=>s.ready).length;
+  $("status").textContent=n===6?"Six streams ready.":`${n} streams ready; ${6-n} unresolved.`;
+  $("start").disabled=n===0;
+  $("muteAll").disabled=n===0;
+  updateCounts();
+}
+
+async function startAll(){
+  state.started=true;
+  $("status").textContent="Starting broadcasts…";
+  $("start").classList.add("active");
+  $("stop").disabled=false;
+  const jobs=specs.filter(s=>s.ready).map(async s=>{
+    s.audio.volume=1;
+    s.audio.muted=s.muted;
+    setState(s,"CONNECTING");
+    try{await s.audio.play();s.playing=true;setState(s,s.muted?"MUTED":"LIVE")}catch(e){setState(s,"BLOCKED / ERROR")}
+  });
+  await Promise.allSettled(jobs);
+  const live=specs.filter(s=>s.playing).length;
+  $("status").textContent=`${live} broadcasts running.`;
+  updateCounts();
+}
+
+function toggleMute(s){
+  s.muted=!s.muted;
+  s.audio.muted=s.muted;
+  const b=$("mute-"+s.id);
+  b.textContent=s.muted?"UNMUTE":"MUTE";
+  b.classList.toggle("active",s.muted);
+  $("row-"+s.id).classList.toggle("is-muted",s.muted);
+  if(s.playing)setState(s,s.muted?"MUTED":"LIVE");
+  updateCounts();
+}
+
+function muteAll(){
+  const shouldMute=!specs.filter(s=>s.ready).every(s=>s.muted);
+  specs.filter(s=>s.ready).forEach(s=>{
+    s.muted=shouldMute;
+    s.audio.muted=shouldMute;
+    const b=$("mute-"+s.id);
+    b.textContent=shouldMute?"UNMUTE":"MUTE";
+    b.classList.toggle("active",shouldMute);
+    $("row-"+s.id).classList.toggle("is-muted",shouldMute);
+    if(s.playing)setState(s,shouldMute?"MUTED":"LIVE");
+  });
+  $("muteAll").textContent=shouldMute?"UNMUTE ALL":"MUTE ALL";
+  updateCounts();
+}
+
+function stopAll(){
+  specs.forEach(s=>{
+    if(!s.audio)return;
+    s.audio.pause();
+    s.playing=false;
+    if(s.ready)setState(s,"READY");
+  });
+  state.started=false;
+  $("start").classList.remove("active");
+  $("stop").disabled=true;
+  $("status").textContent="Stopped.";
+  updateCounts();
+}
+
+function handleAudioError(s){
+  if(!s.urls||s.candidateIndex>=s.urls.length-1){
+    s.playing=false;
+    setState(s,"STREAM ERROR");
+    updateCounts();
+    return;
+  }
+  s.candidateIndex++;
+  s.audio.src=s.urls[s.candidateIndex];
+  setState(s,"RETRYING");
+  if(state.started){
+    s.audio.play().catch(()=>setState(s,"STREAM ERROR"));
+  }
+}
+
+function updateCounts(){
+  const ready=specs.filter(s=>s.ready).length;
+  const audible=specs.filter(s=>s.playing&&!s.muted).length;
+  $("readyCount").textContent=`${ready} / 6 READY`;
+  $("audibleCount").textContent=`${audible} AUDIBLE`;
+}
+
+$("start").addEventListener("click",startAll);
+$("muteAll").addEventListener("click",muteAll);
+$("stop").addEventListener("click",stopAll);
+resolveAll();
+</script>
+</body>
+</html>
