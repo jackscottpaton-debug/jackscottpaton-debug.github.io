@@ -3,92 +3,408 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#000">
-<title>RADIO</title>
+<meta name="theme-color" content="#ffffff">
+<title>Untitled</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;min-height:100%}
-body{padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom)}
-main{max-width:760px;margin:auto;min-height:100vh;display:flex;flex-direction:column}
-h1{font-size:54px;line-height:.9;letter-spacing:-3px;margin:24px 0 10px}
-#status{font-size:14px;color:#777;min-height:22px}
-.buttons{display:grid;gap:10px;margin:30px 0 18px}
-button{appearance:none;background:#000;color:#fff;border:1px solid #444;border-radius:0;padding:20px 8px;font-size:18px;font-weight:700}
-button:active,.active{background:#fff!important;color:#000!important}button:disabled{opacity:.25}
-.speeds{display:flex;gap:7px}.speeds button{flex:1;padding:13px 3px;font-size:14px}
-.now{border-top:1px solid #222;margin-top:28px;padding-top:18px;min-height:120px}
-.label{font-size:11px;color:#666;letter-spacing:.15em}.station{font-size:30px;font-weight:750;margin-top:8px;overflow-wrap:anywhere}.place{color:#888;font-size:14px;margin-top:5px}
-.bottom{margin-top:auto;border-top:1px solid #222;padding:22px 0}.meta{display:flex;justify-content:space-between;color:#666;font-size:12px;margin-bottom:10px}
-#list{font-size:11px;line-height:1.45;color:#555;max-height:24vh;overflow:auto}.live{color:#aaa}
+:root{
+  --bg:#fff;
+  --fg:#111;
+  --muted:#777;
+  --line:#d9d9d9;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:Arial, Helvetica, sans-serif;
+}
+body{
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:0;
+  background:#fff;
+  border-bottom:1px solid #111;
+  min-height:34px;
+}
+.topbar button{
+  appearance:none;
+  background:#fff;
+  color:#111;
+  border:0;
+  border-right:1px solid #111;
+  border-radius:0;
+  padding:8px 11px;
+  font:12px/1 Arial,Helvetica,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.topbar button:active,
+.topbar button.active{
+  background:#111;
+  color:#fff;
+}
+.topbar button:disabled{
+  color:#bbb;
+}
+.statusbar{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid #111;
+  padding:7px 10px;
+  font-size:11px;
+  line-height:1.2;
+}
+.main{
+  min-height:calc(100vh - 70px);
+  display:flex;
+  flex-direction:column;
+}
+.now{
+  padding:18px 10px 28px;
+  border-bottom:1px solid #111;
+}
+.label{
+  font-size:10px;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.station{
+  font-size:34px;
+  line-height:1;
+  letter-spacing:-1.4px;
+  max-width:900px;
+  overflow-wrap:anywhere;
+}
+.place{
+  margin-top:7px;
+  font-size:12px;
+  color:var(--muted);
+}
+.speedblock{
+  display:flex;
+  flex-wrap:wrap;
+  border-bottom:1px solid #111;
+}
+.speedlabel{
+  padding:8px 10px;
+  font-size:11px;
+  border-right:1px solid #111;
+}
+.speedblock button{
+  appearance:none;
+  background:#fff;
+  color:#111;
+  border:0;
+  border-right:1px solid #111;
+  border-radius:0;
+  padding:8px 10px;
+  font:11px/1 Arial,Helvetica,sans-serif;
+}
+.speedblock button.active{
+  background:#111;
+  color:#fff;
+}
+.stationlist{
+  padding:9px 10px 40px;
+  font-size:10px;
+  line-height:1.35;
+  columns:3 180px;
+  column-gap:22px;
+}
+.stationlist div{
+  break-inside:avoid;
+  margin-bottom:2px;
+}
+.stationlist .live{
+  color:#111;
+}
+.stationlist .dead{
+  color:#bbb;
+}
+@media(max-width:600px){
+  .station{font-size:28px}
+  .stationlist{columns:2 140px}
+}
 </style>
 </head>
-<body><main>
-<h1>RADIO</h1><div id="status">Finding live stations…</div>
-<div class="buttons">
-<button id="wall" disabled>ALL AT ONCE</button>
-<button id="scan" disabled>0.5 SECOND SCAN</button>
-<button id="solo" disabled>SOLO TEST / NEXT STATION</button>
-<button id="stop" disabled>STOP</button>
+<body>
+
+<div class="topbar">
+  <button id="wall" disabled>ALL AT ONCE</button>
+  <button id="scan" disabled>SCAN</button>
+  <button id="stop" disabled>STOP</button>
 </div>
-<div class="speeds">
-<button data-ms="100">0.1</button><button data-ms="250">0.25</button><button data-ms="500" class="active">0.5</button><button data-ms="1000">1.0</button>
+
+<div class="statusbar">
+  <span id="status">Finding live stations…</span>
+  <span><span id="count">0 / 0 LIVE</span> · <span id="mode">OFF</span></span>
 </div>
-<div class="now"><div class="label">NOW</div><div class="station" id="station">—</div><div class="place" id="place"></div></div>
-<div class="bottom"><div class="meta"><span id="count">0 / 0 LIVE</span><span id="mode">OFF</span></div><div id="list"></div></div>
-</main>
+
+<div class="speedblock">
+  <span class="speedlabel">SCAN SPEED</span>
+  <button data-ms="20">0.02</button>
+  <button data-ms="50">0.05</button>
+  <button data-ms="100">0.1</button>
+  <button data-ms="250">0.25</button>
+  <button data-ms="500" class="active">0.5</button>
+  <button data-ms="1000">1</button>
+  <button data-ms="2000">2</button>
+  <button data-ms="3000">3</button>
+  <button data-ms="5000">5</button>
+</div>
+
+<div class="main">
+  <div class="now">
+    <div class="label">NOW</div>
+    <div class="station" id="station">—</div>
+    <div class="place" id="place"></div>
+  </div>
+  <div class="stationlist" id="list"></div>
+</div>
+
 <script>
-const API=["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info"],TARGET=60;
-let stations=[],live=[],scanTimer=null,scanMs=500,index=-1,currentMode="off";
-const $=x=>document.getElementById(x), clean=s=>String(s||"").replace(/\s+/g," ").trim();
-function shuffle(a){for(let i=a.length-1;i;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function status(s){$("status").textContent=s}
-function count(){$("count").textContent=`${live.length} / ${stations.length} LIVE`}
-function list(){$("list").innerHTML=stations.map(s=>`<div class="${live.includes(s)?"live":""}">${clean(s.name)}${s.country?" — "+clean(s.country):""}</div>`).join("")}
-function now(s){$("station").textContent=s?clean(s.name):"—";$("place").textContent=s?[clean(s.country),clean(s.language)].filter(Boolean).join(" · "):""}
-async function load(){
- let data;
- for(const base of API){try{let r=await fetch(base+"/json/stations/search?hidebroken=true&order=votes&reverse=true&limit=650");if(r.ok){data=await r.json();if(data.length)break}}catch(e){}}
- if(!data){status("Could not load station directory.");return}
- let viable=data.filter(s=>{let u=s.url_resolved||s.url||"",c=(s.codec||"").toUpperCase();return u.startsWith("https://")&&Number(s.lastcheckok)===1&&Number(s.hls)!==1&&["MP3","AAC"].some(x=>c.includes(x))});
- let countries=new Map();for(const s of viable){let k=s.countrycode||s.country||"?";if(!countries.has(k))countries.set(k,s)}
- let chosen=[...countries.values()],used=new Set(chosen.map(s=>s.stationuuid));
- for(const s of viable){if(chosen.length>=TARGET)break;if(!used.has(s.stationuuid)){chosen.push(s);used.add(s.stationuuid)}}
- stations=shuffle(chosen).slice(0,TARGET).map(s=>{let a=new Audio();a.preload="auto";a.src=s.url_resolved||s.url;a.muted=true;return {...s,audio:a,started:false}});
- count();list();["wall","scan","solo"].forEach(x=>$(x).disabled=false);status(`${stations.length} stations ready.`);
+const API=[
+  "https://de1.api.radio-browser.info",
+  "https://nl1.api.radio-browser.info"
+];
+const TARGET=60;
+
+let stations=[];
+let live=[];
+let scanTimer=null;
+let scanMs=500;
+let index=-1;
+let currentMode="off";
+
+const $=id=>document.getElementById(id);
+const clean=s=>String(s||"").replace(/\s+/g," ").trim();
+
+function shuffle(a){
+  for(let i=a.length-1;i;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
 }
-function mark(s){if(!live.includes(s)){live.push(s);count();list()}}
+
+function setStatus(s){ $("status").textContent=s; }
+
+function updateCount(){
+  $("count").textContent=`${live.length} / ${stations.length} LIVE`;
+}
+
+function updateList(){
+  $("list").innerHTML=stations.map(s=>{
+    const cls=live.includes(s)?"live":"dead";
+    return `<div class="${cls}">${clean(s.name)}${s.country?" — "+clean(s.country):""}</div>`;
+  }).join("");
+}
+
+function setNow(s){
+  $("station").textContent=s?clean(s.name):"—";
+  $("place").textContent=s?[clean(s.country),clean(s.language)].filter(Boolean).join(" · "):"";
+}
+
+async function loadStations(){
+  let data;
+  for(const base of API){
+    try{
+      const r=await fetch(base+"/json/stations/search?hidebroken=true&order=votes&reverse=true&limit=650");
+      if(r.ok){
+        data=await r.json();
+        if(data.length) break;
+      }
+    }catch(e){}
+  }
+
+  if(!data){
+    setStatus("Could not load station directory.");
+    return;
+  }
+
+  const viable=data.filter(s=>{
+    const u=s.url_resolved||s.url||"";
+    const c=(s.codec||"").toUpperCase();
+    return u.startsWith("https://")
+      && Number(s.lastcheckok)===1
+      && Number(s.hls)!==1
+      && ["MP3","AAC"].some(x=>c.includes(x));
+  });
+
+  const countries=new Map();
+  for(const s of viable){
+    const k=s.countrycode||s.country||"?";
+    if(!countries.has(k)) countries.set(k,s);
+  }
+
+  let chosen=[...countries.values()];
+  const used=new Set(chosen.map(s=>s.stationuuid));
+
+  for(const s of viable){
+    if(chosen.length>=TARGET) break;
+    if(!used.has(s.stationuuid)){
+      chosen.push(s);
+      used.add(s.stationuuid);
+    }
+  }
+
+  stations=shuffle(chosen).slice(0,TARGET).map(s=>{
+    const a=new Audio();
+    a.preload="auto";
+    a.src=s.url_resolved||s.url;
+    a.muted=true;
+    return {...s,audio:a,started:false};
+  });
+
+  updateCount();
+  updateList();
+  $("wall").disabled=false;
+  $("scan").disabled=false;
+  setStatus(`${stations.length} stations ready`);
+}
+
+function markLive(s){
+  if(!live.includes(s)){
+    live.push(s);
+    updateCount();
+    updateList();
+  }
+}
+
 async function ensureStarted(){
- if(live.length)return true;
- status(`Starting ${stations.length} streams…`);
- stations.forEach(s=>{s.audio.muted=true;s.audio.onplaying=()=>{s.started=true;mark(s)}});
- let ps=stations.map(s=>{try{let p=s.audio.play();return p&&p.then?p.then(()=>{s.started=true;mark(s)}).catch(()=>false):Promise.resolve(false)}catch(e){return Promise.resolve(false)}});
- await Promise.allSettled(ps);await new Promise(r=>setTimeout(r,1800));
- live=stations.filter(s=>s.started&&!s.audio.paused);count();list();
- if(!live.length){status("No streams started.");return false}
- status(`${live.length} streams running.`);return true;
+  if(live.length) return true;
+
+  setStatus(`Starting ${stations.length} streams…`);
+
+  stations.forEach(s=>{
+    s.audio.muted=true;
+    s.audio.onplaying=()=>{
+      s.started=true;
+      markLive(s);
+    };
+  });
+
+  const ps=stations.map(s=>{
+    try{
+      const p=s.audio.play();
+      return p&&p.then
+        ? p.then(()=>{s.started=true;markLive(s)}).catch(()=>false)
+        : Promise.resolve(false);
+    }catch(e){
+      return Promise.resolve(false);
+    }
+  });
+
+  await Promise.allSettled(ps);
+  await new Promise(r=>setTimeout(r,1600));
+
+  live=stations.filter(s=>s.started&&!s.audio.paused);
+
+  updateCount();
+  updateList();
+
+  if(!live.length){
+    setStatus("No streams started");
+    return false;
+  }
+
+  setStatus(`${live.length} streams running`);
+  return true;
 }
-function muteAll(){live.forEach(s=>s.audio.muted=true)}
-function clearScan(){if(scanTimer){clearInterval(scanTimer);scanTimer=null}}
-function audibleOne(){
- if(!live.length)return;
- muteAll();index=(index+1)%live.length;
- let s=live[index];s.audio.muted=false;now(s);
+
+function muteAll(){
+  live.forEach(s=>s.audio.muted=true);
 }
-async function wall(){
- clearScan();currentMode="wall";$("mode").textContent="WALL";$("stop").disabled=false;
- if(await ensureStarted()){live.forEach(s=>s.audio.muted=false);now(null);$("station").textContent=`${live.length} STATIONS`;$("place").textContent="simultaneously";status(`${live.length} stations unmuted together.`)}
+
+function clearScan(){
+  if(scanTimer){
+    clearInterval(scanTimer);
+    scanTimer=null;
+  }
 }
-async function scan(){
- clearScan();currentMode="scan";$("mode").textContent=`SCAN ${scanMs/1000}s`;$("stop").disabled=false;
- if(await ensureStarted()){index=-1;audibleOne();scanTimer=setInterval(audibleOne,scanMs);status(`Switching one audible station every ${scanMs/1000}s.`)}
+
+function nextScan(){
+  if(!live.length) return;
+  muteAll();
+  index=(index+1)%live.length;
+  const s=live[index];
+  s.audio.muted=false;
+  setNow(s);
 }
-async function solo(){
- clearScan();currentMode="solo";$("mode").textContent="SOLO";$("stop").disabled=false;
- if(await ensureStarted()){audibleOne();status("Only the displayed station should be audible. Tap SOLO TEST again for the next one.")}
+
+async function wallMode(){
+  clearScan();
+  currentMode="wall";
+  $("mode").textContent="WALL";
+  $("stop").disabled=false;
+  $("wall").classList.add("active");
+  $("scan").classList.remove("active");
+
+  if(await ensureStarted()){
+    live.forEach(s=>s.audio.muted=false);
+    $("station").textContent=`${live.length} STATIONS`;
+    $("place").textContent="simultaneously";
+    setStatus(`${live.length} stations playing together`);
+  }
 }
-function stop(){
- clearScan();muteAll();currentMode="off";$("mode").textContent="OFF";now(null);$("stop").disabled=true;status("Muted. Choose a mode to continue.");
+
+async function scanMode(){
+  clearScan();
+  currentMode="scan";
+  $("mode").textContent=`SCAN ${scanMs/1000}s`;
+  $("stop").disabled=false;
+  $("scan").classList.add("active");
+  $("wall").classList.remove("active");
+
+  if(await ensureStarted()){
+    index=-1;
+    nextScan();
+    scanTimer=setInterval(nextScan,scanMs);
+    setStatus(`Switching every ${scanMs<1000?scanMs+"ms":(scanMs/1000)+"s"}`);
+  }
 }
-$("wall").onclick=wall;$("scan").onclick=scan;$("solo").onclick=solo;$("stop").onclick=stop;
-document.querySelectorAll("[data-ms]").forEach(b=>b.onclick=()=>{scanMs=+b.dataset.ms;document.querySelectorAll("[data-ms]").forEach(x=>x.classList.toggle("active",x===b));if(currentMode==="scan"){clearScan();$("mode").textContent=`SCAN ${scanMs/1000}s`;scanTimer=setInterval(audibleOne,scanMs)}});
-load();
-</script></body></html>
+
+function stopMode(){
+  clearScan();
+  muteAll();
+  currentMode="off";
+  $("mode").textContent="OFF";
+  $("stop").disabled=true;
+  $("scan").classList.remove("active");
+  $("wall").classList.remove("active");
+  setNow(null);
+  setStatus("Stopped");
+}
+
+$("wall").onclick=wallMode;
+$("scan").onclick=scanMode;
+$("stop").onclick=stopMode;
+
+document.querySelectorAll("[data-ms]").forEach(b=>{
+  b.onclick=()=>{
+    scanMs=Number(b.dataset.ms);
+    document.querySelectorAll("[data-ms]").forEach(x=>x.classList.toggle("active",x===b));
+
+    if(currentMode==="scan"){
+      clearScan();
+      $("mode").textContent=`SCAN ${scanMs/1000}s`;
+      scanTimer=setInterval(nextScan,scanMs);
+      setStatus(`Switching every ${scanMs<1000?scanMs+"ms":(scanMs/1000)+"s"}`);
+    }
+  };
+});
+
+loadStations();
+</script>
+</body>
+</html>
