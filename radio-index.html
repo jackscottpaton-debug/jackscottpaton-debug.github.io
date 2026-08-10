@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>RADIO</title>
+<style>
+:root{--bg:#000;--fg:#fff;--muted:#777;--line:#222}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+body{padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom)}
+main{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+h1{font-size:54px;line-height:.9;letter-spacing:-3px;margin:24px 0 10px}
+.status{font-size:14px;color:var(--muted);min-height:22px}
+.bigbuttons{display:grid;gap:12px;margin:34px 0 24px}
+button{appearance:none;background:#000;color:#fff;border:1px solid #444;border-radius:0;padding:22px 12px;font:700 20px/1 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+button:active{background:#fff;color:#000}button:disabled{opacity:.25}
+.scanControls{display:flex;gap:8px}.scanControls button{flex:1;padding:14px 5px;font-size:15px}.scanControls button.active{background:#fff;color:#000}
+.now{margin-top:28px;border-top:1px solid var(--line);padding-top:20px;min-height:120px}
+.label{font-size:11px;color:var(--muted);letter-spacing:.16em}.station{font-size:32px;font-weight:750;letter-spacing:-1px;margin-top:8px}.place{font-size:15px;color:#999;margin-top:5px}
+.live{margin-top:auto;padding:28px 0 12px;border-top:1px solid var(--line)}.liveHead{display:flex;justify-content:space-between;font-size:12px;color:#777;margin-bottom:12px}
+#stationList{font-size:12px;line-height:1.45;color:#555;max-height:26vh;overflow:auto}.ok{color:#aaa}.fail{text-decoration:line-through}
+</style>
+</head>
+<body>
+<main>
+<h1>RADIO</h1>
+<div class="status" id="status">Finding live stations…</div>
+<div class="bigbuttons">
+<button id="wall" disabled>ALL AT ONCE</button>
+<button id="scan" disabled>0.5 SECOND SCAN</button>
+<button id="stop" disabled>STOP</button>
+</div>
+<div class="scanControls">
+<button data-ms="100">0.1</button><button data-ms="250">0.25</button><button data-ms="500" class="active">0.5</button><button data-ms="1000">1.0</button>
+</div>
+<div class="now"><div class="label">NOW</div><div class="station" id="station">—</div><div class="place" id="place"></div></div>
+<div class="live"><div class="liveHead"><span id="count">0 / 0 LIVE</span><span id="mode">OFF</span></div><div id="stationList"></div></div>
+</main>
+<script>
+const API_MIRRORS=["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info"];
+const TARGET=60,FETCH_LIMIT=650;
+let stations=[],live=[],mode="off",scanTimer=null,scanMs=500,scanIndex=0;
+const $=id=>document.getElementById(id);
+const mod=(s)=>String(s||"").replace(/\s+/g," ").trim();
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function setStatus(s){$("status").textContent=s}
+function setNow(s){if(!s){$("station").textContent="—";$("place").textContent="";return}$("station").textContent=mod(s.name)||"UNKNOWN";$("place").textContent=[mod(s.country),mod(s.language)].filter(Boolean).join(" · ")}
+function updateCount(){$("count").textContent=`${live.length} / ${stations.length} LIVE`}
+function updateList(){$("stationList").innerHTML=stations.map(s=>`<div class="${live.includes(s)?"ok":"fail"}">${mod(s.name)}${s.country?` — ${mod(s.country)}`:""}</div>`).join("")}
+async function fetchStations(){
+ let data=null;
+ for(const base of API_MIRRORS){try{let r=await fetch(base+"/json/stations/search?hidebroken=true&order=votes&reverse=true&limit="+FETCH_LIMIT);if(r.ok){data=await r.json();if(data.length)break}}catch(e){}}
+ if(!data)throw new Error("api");
+ const viable=data.filter(s=>{let u=s.url_resolved||s.url||"",c=(s.codec||"").toUpperCase();return u.startsWith("https://")&&Number(s.lastcheckok)===1&&Number(s.hls)!==1&&(["MP3","AAC","AAC+"].some(x=>c.includes(x)))&&(!s.bitrate||Number(s.bitrate)<=192)});
+ const byCountry=new Map();for(const s of viable){let cc=s.countrycode||s.country||"??";if(!byCountry.has(cc))byCountry.set(cc,s)}
+ let chosen=[...byCountry.values()],used=new Set(chosen.map(s=>s.stationuuid));
+ for(const s of viable){if(chosen.length>=TARGET)break;if(!used.has(s.stationuuid)){chosen.push(s);used.add(s.stationuuid)}}
+ chosen=shuffle(chosen).slice(0,TARGET);
+ stations=chosen.map(s=>{let audio=new Audio();audio.preload="auto";audio.src=s.url_resolved||s.url;audio.volume=0;return {...s,audio,started:false}});
+ $("wall").disabled=false;$("scan").disabled=false;updateCount();updateList();setStatus(`${stations.length} stations ready. Tap a mode to start.`);
+}
+function markLive(s){if(!live.includes(s)){live.push(s);updateCount();updateList()}}
+async function startAllMuted(){
+ if(scanTimer){clearInterval(scanTimer);scanTimer=null}
+ live=[];stations.forEach(s=>{s.started=false;s.audio.volume=0;s.audio.onplaying=()=>{s.started=true;markLive(s)}});
+ setStatus(`Starting ${stations.length} live streams…`);
+ const ps=stations.map(s=>{try{let p=s.audio.play();return p&&p.then?p.then(()=>{s.started=true;markLive(s)}).catch(()=>false):Promise.resolve(true)}catch(e){return Promise.resolve(false)}});
+ await Promise.allSettled(ps);await new Promise(r=>setTimeout(r,1800));
+ live=stations.filter(s=>s.started&&!s.audio.paused);updateCount();updateList();
+ if(!live.length){setStatus("No streams started. Try again, or test on desktop Safari/Chrome.");return false}
+ setStatus(`${live.length} streams are running.`);return true;
+}
+function silenceAll(){stations.forEach(s=>{try{s.audio.volume=0}catch(e){}})}
+async function wallMode(){
+ $("wall").disabled=true;$("scan").disabled=true;$("stop").disabled=false;mode="wall";$("mode").textContent="WALL";setNow(null);
+ let ok=await startAllMuted();if(ok){let v=Math.min(.08,Math.max(.018,1/Math.max(12,live.length)));live.forEach(s=>s.audio.volume=v);setStatus(`${live.length} stations playing together.`);$("station").textContent=`${live.length} STATIONS`;$("place").textContent="simultaneously"}
+ $("wall").disabled=false;$("scan").disabled=false;
+}
+function nextScan(){if(!live.length)return;silenceAll();scanIndex=(scanIndex+1)%live.length;let s=live[scanIndex];s.audio.volume=1;setNow(s)}
+async function scanMode(){
+ $("wall").disabled=true;$("scan").disabled=true;$("stop").disabled=false;mode="scan";$("mode").textContent=`SCAN ${scanMs/1000}s`;
+ let ok=await startAllMuted();if(ok){scanIndex=-1;nextScan();scanTimer=setInterval(nextScan,scanMs);setStatus(`${live.length} pre-running streams · switching every ${scanMs/1000}s`)}
+ $("wall").disabled=false;$("scan").disabled=false;
+}
+function stopEverything(){if(scanTimer)clearInterval(scanTimer);scanTimer=null;mode="off";$("mode").textContent="OFF";setNow(null);stations.forEach(s=>{try{s.audio.pause();s.audio.currentTime=0}catch(e){}});live=[];updateCount();updateList();$("stop").disabled=true;setStatus("Stopped. Tap a mode to restart.")}
+$("wall").onclick=wallMode;$("scan").onclick=scanMode;$("stop").onclick=stopEverything;
+document.querySelectorAll("[data-ms]").forEach(b=>b.onclick=()=>{scanMs=Number(b.dataset.ms);document.querySelectorAll("[data-ms]").forEach(x=>x.classList.toggle("active",x===b));if(mode==="scan"&&live.length){if(scanTimer)clearInterval(scanTimer);$("mode").textContent=`SCAN ${scanMs/1000}s`;scanTimer=setInterval(nextScan,scanMs)}});
+fetchStations().catch(()=>setStatus("Could not load the station directory. Refresh to try again."));
+</script>
+</body>
+</html>
