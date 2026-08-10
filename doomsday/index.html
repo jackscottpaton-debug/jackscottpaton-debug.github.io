@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Doomsday Drill">
+<title>Doomsday Drill</title>
+
+<style>
+:root{
+--bg:#0b0b0d;
+--card:#141417;
+--ink:#f5f5f7;
+--muted:#99999f;
+--blue:#0a84ff;
+--green:#30d158;
+--red:#ff453a;
+--line:#2a2a2f
+}
+
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:var(--bg);
+color:var(--ink);
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;
+min-height:100vh;
+padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)
+}
+
+.wrap{
+max-width:700px;
+margin:auto;
+padding:20px 0 40px
+}
+
+h1{
+margin:0;
+font-size:29px
+}
+
+.codes{
+color:var(--muted);
+font-size:13px;
+margin-top:5px
+}
+
+.tabs{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:7px;
+margin:20px 0
+}
+
+button{
+background:#111115;
+color:white;
+border:1px solid var(--line);
+border-radius:15px;
+padding:14px 5px;
+font-size:15px;
+font-weight:650
+}
+
+button.active{
+background:var(--blue);
+border-color:var(--blue)
+}
+
+.card{
+background:var(--card);
+border:1px solid var(--line);
+border-radius:27px;
+min-height:340px;
+padding:30px 18px;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+text-align:center
+}
+
+.kicker{
+color:var(--muted);
+font-size:16px
+}
+
+.prompt{
+font-size:43px;
+font-weight:750;
+margin:14px 0
+}
+
+.sub{
+color:var(--muted);
+font-size:17px;
+min-height:22px
+}
+
+.answers{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:9px;
+width:100%;
+margin-top:25px
+}
+
+.answers button{
+font-size:20px;
+padding:17px 4px
+}
+
+.answers.weekdays{
+grid-template-columns:repeat(2,1fr)
+}
+
+.answers.weekdays button:last-child{
+grid-column:1/-1
+}
+
+.feedback{
+height:32px;
+margin-top:17px;
+font-size:19px;
+font-weight:700
+}
+
+.good{color:var(--green)}
+.bad{color:var(--red)}
+
+.explain{
+font-size:14px;
+line-height:1.5;
+color:#ccc;
+margin-top:10px
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:7px;
+margin-top:12px
+}
+
+.stat{
+background:#111115;
+border:1px solid var(--line);
+border-radius:15px;
+padding:11px 4px;
+text-align:center
+}
+
+.stat b{
+display:block;
+font-size:19px
+}
+
+.stat span{
+font-size:11px;
+color:var(--muted)
+}
+
+.controls{
+display:flex;
+gap:8px;
+margin-top:12px
+}
+
+.controls button{
+flex:1
+}
+
+.settings{
+margin-top:14px;
+background:#111115;
+border:1px solid var(--line);
+border-radius:18px;
+padding:14px
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin:8px 0;
+gap:10px
+}
+
+select,input{
+background:#08080a;
+color:white;
+border:1px solid var(--line);
+border-radius:9px;
+padding:8px
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<h1>Doomsday Drill</h1>
+<div class="codes">033614625035 · 0542165320</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="card">
+
+<div class="kicker" id="kicker"></div>
+<div class="prompt" id="prompt"></div>
+<div class="sub" id="sub"></div>
+
+<div class="answers" id="answers"></div>
+
+<div class="feedback" id="feedback"></div>
+<div class="explain" id="explain"></div>
+
+</div>
+
+<div class="stats">
+
+<div class="stat">
+<b id="streak">0</b>
+<span>STREAK</span>
+</div>
+
+<div class="stat">
+<b id="accuracy">0%</b>
+<span>ACCURACY</span>
+</div>
+
+<div class="stat">
+<b id="average">–</b>
+<span>AVG TIME</span>
+</div>
+
+<div class="stat">
+<b id="best">0</b>
+<span>BEST</span>
+</div>
+
+</div>
+
+<div class="controls">
+<button onclick="next()">Skip</button>
+<button onclick="showAnswer()">Answer</button>
+<button onclick="next()">Next</button>
+</div>
+
+<div class="settings">
+
+<div class="row">
+<span>Speed target</span>
+
+<select id="speed">
+<option value="0">Untimed</option>
+<option value="5">5 seconds</option>
+<option value="3">3 seconds</option>
+<option value="2">2 seconds</option>
+<option value="1">1 second</option>
+</select>
+
+</div>
+
+<div class="row">
+<span>Full-date years</span>
+
+<div>
+<input id="ymin" type="number" value="1800" style="width:75px">
+–
+<input id="ymax" type="number" value="2099" style="width:75px">
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const months=[
+"January","February","March","April",
+"May","June","July","August",
+"September","October","November","December"
+];
+
+const monthCodes=[
+0,3,3,6,1,4,6,2,5,0,3,5
+];
+
+const decadeCodes=[
+0,5,4,2,1,6,5,3,2,0
+];
+
+const weekdays=[
+"Sunday","Monday","Tuesday","Wednesday",
+"Thursday","Friday","Saturday"
+];
+
+const modes=[
+["month","Months"],
+["decade","Decades"],
+["mod","Mod 7"],
+["year","Years"],
+["fragment","Fragments"],
+["full","Full dates"]
+];
+
+let mode="month";
+let question;
+let startTime;
+
+let stats=
+JSON.parse(localStorage.getItem("doomStats") ||
+'{"correct":0,"total":0,"streak":0,"best":0,"times":[]}');
+
+function mod7(n){
+return ((n%7)+7)%7;
+}
+
+function rand(a,b){
+return a+Math.floor(Math.random()*(b-a+1));
+}
+
+function centuryCode(year){
+
+let century=Math.floor(year/100);
+
+return mod7(
+6-(2*(century%4))
+);
+
+}
+
+function renderTabs(){
+
+let area=document.getElementById("tabs");
+
+area.innerHTML="";
+
+modes.forEach(m=>{
+
+let b=document.createElement("button");
+
+b.textContent=m[1];
+
+if(m[0]===mode)
+b.classList.add("active");
+
+b.onclick=()=>{
+
+mode=m[0];
+
+renderTabs();
+
+next();
+
+};
+
+area.appendChild(b);
+
+});
+
+}
+
+function makeQuestion(){
+
+if(mode==="month"){
+
+let m=rand(0,11);
+
+return {
+kicker:"MONTH CODE",
+prompt:months[m],
+answer:monthCodes[m],
+choices:[0,1,2,3,4,5,6],
+explain:months[m]+" → "+monthCodes[m]
+};
+
+}
+
+if(mode==="decade"){
+
+let d=rand(0,9);
+
+return {
+kicker:"DECADE CODE",
+prompt:(d*10)+"s",
+answer:decadeCodes[d],
+choices:[0,1,2,3,4,5,6],
+explain:(d*10)+"s → "+decadeCodes[d]
+};
+
+}
+
+if(mode==="mod"){
+
+let n=rand(14,55);
+
+return {
+kicker:"REDUCE INSTANTLY",
+prompt:n+" mod 7",
+answer:mod7(n),
+choices:[0,1,2,3,4,5,6],
+explain:n+" → "+mod7(n)
+};
+
+}
+
+if(mode==="year"){
+
+let y=rand(0,99);
+
+let decade=Math.floor(y/10);
+let digit=y%10;
+
+let total=
+decadeCodes[decade]+digit;
+
+return {
+kicker:"YEAR COMPONENT",
+prompt:String(y).padStart(2,"0"),
+sub:"decade code + final digit",
+answer:mod7(total),
+choices:[0,1,2,3,4,5,6],
+explain:
+(decade*10)+"s code "+
+decadeCodes[decade]+
+" + "+digit+
+" = "+total+
+" → "+mod7(total)
+};
+
+}
+
+if(mode==="fragment"){
+
+let m=rand(0,11);
+let day=rand(1,31);
+
+let total=
+day+monthCodes[m];
+
+return {
+kicker:"DATE FRAGMENT",
+prompt:day+" "+months[m],
+sub:"day + month code",
+answer:mod7(total),
+choices:[0,1,2,3,4,5,6],
+explain:
+day+" + "+monthCodes[m]+
+" = "+total+
+" → "+mod7(total)
+};
+
+}
+
+if(mode==="full"){
+
+let min=parseInt(
+document.getElementById("ymin").value
+);
+
+let max=parseInt(
+document.getElementById("ymax").value
+);
+
+let year=rand(min,max);
+let month=rand(0,11);
+
+let days=
+new Date(
+Date.UTC(year,month+1,0)
+).getUTCDate();
+
+let day=rand(1,days);
+
+let answer=
+new Date(
+Date.UTC(year,month,day)
+).getUTCDay();
+
+let fragment=
+mod7(day+monthCodes[month]);
+
+let yy=year%100;
+let decade=Math.floor(yy/10);
+let digit=yy%10;
+
+let yearPart=
+mod7(
+decadeCodes[decade]+digit
+);
+
+let leap=
+year%4===0 &&
+(year%100!==0 || year%400===0);
+
+let leapAdjustment=
+leap && month<2 ? 6 : 0;
+
+let total=
+mod7(
+fragment+
+yearPart+
+centuryCode(year)+
+leapAdjustment
+);
+
+return {
+
+kicker:"FULL DATE",
+
+prompt:
+day+" "+months[month]+" "+year,
+
+sub:"Choose the weekday",
+
+answer:answer,
+
+choices:[0,1,2,3,4,5,6],
+
+weekday:true,
+
+explain:
+"Date: "+day+
+" + "+monthCodes[month]+
+" → "+fragment+
+". Year: "+(decade*10)+
+"s code "+decadeCodes[decade]+
+" + "+digit+
+" → "+yearPart+
+". Century: "+centuryCode(year)+
+(leapAdjustment ?
+". Leap Jan/Feb: −1" : "")+
+". Total → "+total+
+" = "+weekdays[total]
+
+};
+
+}
+
+}
+
+function next(){
+
+question=makeQuestion();
+
+document.getElementById("kicker")
+.textContent=question.kicker;
+
+document.getElementById("prompt")
+.textContent=question.prompt;
+
+document.getElementById("sub")
+.textContent=question.sub || "";
+
+document.getElementById("feedback")
+.textContent="";
+
+document.getElementById("explain")
+.textContent="";
+
+let answers=
+document.getElementById("answers");
+
+answers.innerHTML="";
+
+answers.className=
+"answers"+
+(question.weekday ?
+" weekdays" : "");
+
+question.choices.forEach(value=>{
+
+let b=document.createElement("button");
+
+b.textContent=
+question.weekday ?
+weekdays[value] :
+value;
+
+b.onclick=()=>answer(value);
+
+answers.appendChild(b);
+
+});
+
+startTime=performance.now();
+
+}
+
+function answer(value){
+
+let time=
+(performance.now()-startTime)/1000;
+
+stats.total++;
+
+if(value===question.answer){
+
+stats.correct++;
+stats.streak++;
+
+stats.best=
+Math.max(
+stats.best,
+stats.streak
+);
+
+stats.times.push(time);
+
+document.getElementById("feedback")
+.textContent=
+"Correct · "+time.toFixed(2)+"s";
+
+document.getElementById("feedback")
+.className="feedback good";
+
+setTimeout(next,500);
+
+}
+
+else{
+
+stats.streak=0;
+
+document.getElementById("feedback")
+.textContent=
+"Wrong — "+
+(question.weekday ?
+weekdays[question.answer] :
+question.answer);
+
+document.getElementById("feedback")
+.className="feedback bad";
+
+document.getElementById("explain")
+.textContent=question.explain;
+
+}
+
+localStorage.setItem(
+"doomStats",
+JSON.stringify(stats)
+);
+
+updateStats();
+
+}
+
+function showAnswer(){
+
+document.getElementById("feedback")
+.textContent=
+"Answer: "+
+(question.weekday ?
+weekdays[question.answer] :
+question.answer);
+
+document.getElementById("explain")
+.textContent=
+question.explain;
+
+}
+
+function updateStats(){
+
+document.getElementById("streak")
+.textContent=stats.streak;
+
+document.getElementById("best")
+.textContent=stats.best;
+
+document.getElementById("accuracy")
+.textContent=
+stats.total ?
+Math.round(
+stats.correct/stats.total*100
+)+"%" :
+"0%";
+
+if(stats.times.length){
+
+let avg=
+stats.times.reduce(
+(a,b)=>a+b,0
+)/stats.times.length;
+
+document.getElementById("average")
+.textContent=
+avg.toFixed(2)+"s";
+
+}
+
+}
+
+renderTabs();
+updateStats();
+next();
+
+</script>
+
+</body>
+</html>
