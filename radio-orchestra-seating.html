@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Radio Orchestra</title>
+<style>
+:root{--bg:#fff;--fg:#111;--muted:#777;--pale:#b8b8b8;--line:#111}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:Arial,Helvetica,sans-serif}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font-family:Arial,Helvetica,sans-serif}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;flex-wrap:wrap;background:#fff;border-bottom:1px solid var(--line);min-height:34px}
+.topbar button{appearance:none;background:#fff;color:#111;border:0;border-right:1px solid var(--line);border-radius:0;padding:8px 11px;font:12px/1 Arial,Helvetica,sans-serif;text-transform:uppercase;letter-spacing:.02em;cursor:pointer}
+.topbar button:hover,.topbar button.active{background:#111;color:#fff}
+.topbar button:disabled{color:#bbb;background:#fff;cursor:default}
+.statusbar{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:7px 10px;font-size:11px;line-height:1.2;text-transform:uppercase}
+.orchestra{position:relative;max-width:1180px;margin:0 auto;padding:34px 16px 80px;min-height:720px}
+.row{display:flex;justify-content:center;align-items:flex-end;gap:16px;margin:0 auto 34px}
+.row.back{max-width:760px}
+.row.middle{max-width:930px}
+.row.front{max-width:1050px}
+.row.voice{max-width:520px;margin-top:48px}
+.seat{position:relative;appearance:none;width:150px;min-height:82px;background:#fff;color:#111;border:1px solid #111;border-radius:0;padding:10px;text-align:left;cursor:pointer;transition:none}
+.seat:hover{background:#f5f5f5}
+.seat.muted{background:#111;color:#fff}
+.seat.unavailable{color:#aaa;border-color:#aaa}
+.seat.unavailable:hover{background:#fff}
+.instrument{font-size:17px;line-height:1.02;letter-spacing:-.35px;text-transform:uppercase}
+.seatstate{position:absolute;left:10px;bottom:8px;font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.04em;color:#777}
+.seat.muted .seatstate{color:#ccc}
+.seat.unavailable .seatstate{color:#aaa}
+.tooltip{position:fixed;z-index:60;display:none;pointer-events:none;width:270px;background:#fff;color:#111;border:1px solid #111;padding:9px 10px;font-size:11px;line-height:1.35}
+.tooltip.show{display:block}
+.tipinstrument{font-size:14px;text-transform:uppercase;margin-bottom:4px}
+.tipstation{margin-bottom:5px}
+.tipmeta{font-size:10px;color:#777;text-transform:uppercase}
+.conductor{width:165px;margin:58px auto 0;border-top:1px solid #111;text-align:center;padding-top:7px;font-size:10px;text-transform:uppercase;color:#777}
+.footer{border-top:1px solid #111;padding:8px 10px 36px;font-size:10px;color:#777;text-transform:uppercase}
+@media(max-width:850px){
+  .orchestra{padding-left:10px;padding-right:10px;min-height:0}
+  .row{gap:9px;margin-bottom:22px;flex-wrap:wrap;max-width:100%!important}
+  .seat{width:132px;min-height:74px}
+  .instrument{font-size:15px}
+}
+@media(max-width:520px){
+  .orchestra{padding-top:22px}
+  .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}
+  .seat{width:100%;min-height:70px}
+  .row.voice{margin-top:24px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button id="start" disabled>START ALL</button>
+  <button id="muteAll" disabled>MUTE ALL</button>
+  <button id="stop" disabled>STOP</button>
+</div>
+<div class="statusbar">
+  <span id="status">Resolving orchestra…</span>
+  <span><span id="readyCount">0 / 12 READY</span> · <span id="audibleCount">0 AUDIBLE</span></span>
+</div>
+
+<main class="orchestra" id="orchestra">
+  <div class="row back" data-row="back"></div>
+  <div class="row middle" data-row="middle"></div>
+  <div class="row front" data-row="front"></div>
+  <div class="row voice" data-row="voice"></div>
+  <div class="conductor">YOU / CONDUCTOR</div>
+</main>
+<div class="footer">RADIO ORCHESTRA · TEST 01</div>
+<div class="tooltip" id="tooltip" aria-hidden="true"></div>
+
+<script>
+const API=[
+  "https://de1.api.radio-browser.info",
+  "https://nl1.api.radio-browser.info",
+  "https://at1.api.radio-browser.info"
+];
+
+const specs=[
+  {
+    id:"organ",row:"back",instrument:"ORGAN",station:"Radio Art — Organ",
+    search:["Radio Art Organ","Radio Art - Organ"],purity:"mostly solo / occasional ensemble",detail:"Radio Art"
+  },
+  {
+    id:"harpsichord",row:"back",instrument:"HARPSICHORD",station:"Radio Art — Harpsichord",
+    search:["Radio Art Harpsichord","Radio Art - Harpsichord"],purity:"mostly solo",detail:"Radio Art"
+  },
+  {
+    id:"steelpan",row:"back",instrument:"STEELPAN",station:"Steelpan Music Radio",
+    search:["Steelpan Music Radio"],purity:"instrument-focused / may include ensembles",detail:"independent specialist radio"
+  },
+  {
+    id:"harp",row:"middle",instrument:"HARP",station:"Radio Art — Solo Harp",
+    search:["Radio Art Solo Harp","Radio Art - Solo Harp"],purity:"solo",detail:"Radio Art"
+  },
+  {
+    id:"guitar",row:"middle",instrument:"GUITAR",station:"Radio Art — Solo Guitar",
+    search:["Radio Art Solo Guitar","Radio Art - Solo Guitar"],purity:"solo / fingerstyle",detail:"Radio Art"
+  },
+  {
+    id:"setar",row:"middle",instrument:"SETAR",station:"Radio Art — Setar",
+    search:["Radio Art Setar","Radio Art - Setar"],purity:"mostly solo",detail:"Persian setar · Radio Art"
+  },
+  {
+    id:"chinese",row:"middle",instrument:"CHINESE CLASSICAL",station:"Chinese Classical Music Online Radio",
+    direct:["https://radio.chinesemusicworld.com/chinesemusic.ogg"],purity:"mixed Chinese instruments",detail:"HTTPS OGG · ChineseMusicWorld"
+  },
+  {
+    id:"piano",row:"front",instrument:"PIANO",station:"Whisperings — Solo Piano Radio",
+    direct:["https://pianosolo.streamguys1.com/live"],purity:"solo",detail:"StreamGuys · HTTPS"
+  },
+  {
+    id:"flute",row:"front",instrument:"FLUTE",station:"Radio Art — Solo Flute",
+    search:["Radio Art Solo Flute","Radio Art - Solo Flute"],purity:"solo",detail:"Radio Art"
+  },
+  {
+    id:"clarinet",row:"front",instrument:"CLARINET",station:"1AU CLARINET / Clarinet Radio",
+    search:["1AU CLARINET","Clarinet Radio Easy","Clarinet Radio"],purity:"instrument-themed / audition",detail:"fringe UK internet radio"
+  },
+  {
+    id:"soloist",row:"front",instrument:"UNKNOWN SOLOIST",station:"Radio Art — Solo Classical Instruments",
+    search:["Radio Art Solo Classical Instruments","Radio Art Solo Instruments"],purity:"solo instrument changes track-to-track",detail:"Radio Art"
+  },
+  {
+    id:"voice",row:"voice",instrument:"A CAPPELLA",station:"Radio Art — A Cappella",
+    search:["Radio Art A Cappella","Radio Art - A Cappella"],purity:"unaccompanied voices / choir",detail:"Radio Art"
+  }
+];
+
+const $=id=>document.getElementById(id);
+const app={started:false};
+
+function esc(s){return String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+function build(){
+  for(const s of specs){
+    const row=document.querySelector(`[data-row="${s.row}"]`);
+    const b=document.createElement("button");
+    b.className="seat unavailable";
+    b.id=`seat-${s.id}`;
+    b.type="button";
+    b.disabled=true;
+    b.innerHTML=`<div class="instrument">${esc(s.instrument)}</div><div class="seatstate" id="state-${s.id}">RESOLVING</div>`;
+    row.appendChild(b);
+    const a=new Audio();
+    a.preload="none";
+    a.volume=1;
+    a.muted=false;
+    a.playsInline=true;
+    s.audio=a;s.ready=false;s.playing=false;s.muted=false;s.urls=[];s.candidateIndex=0;
+    a.addEventListener("playing",()=>{s.playing=true;setSeatState(s,s.muted?"MUTED":"LIVE");updateCounts()});
+    a.addEventListener("waiting",()=>{if(s.playing)setSeatState(s,"BUFFERING")});
+    a.addEventListener("stalled",()=>{if(s.playing)setSeatState(s,"BUFFERING")});
+    a.addEventListener("error",()=>handleAudioError(s));
+    b.addEventListener("click",()=>toggleSeat(s));
+    b.addEventListener("mouseenter",e=>showTip(s,e));
+    b.addEventListener("mousemove",e=>moveTip(e));
+    b.addEventListener("mouseleave",hideTip);
+  }
+}
+
+function setSeatState(s,t){$("state-"+s.id).textContent=t}
+
+function setReady(s,urls,label){
+  const clean=[...new Set((urls||[]).filter(Boolean))];
+  if(!clean.length){setSeatState(s,"NO STREAM");return}
+  s.urls=clean;s.ready=true;s.candidateIndex=0;s.audio.src=clean[0];
+  const b=$("seat-"+s.id);b.disabled=false;b.classList.remove("unavailable");
+  if(label)s.resolvedDetail=label;
+  setSeatState(s,"READY");updateCounts();
+}
+
+function streamScore(x,q){
+  const n=(x.name||"").toLowerCase(),qq=q.toLowerCase();let score=0;
+  if(n===qq)score+=120;
+  if(n.includes(qq)||qq.includes(n))score+=50;
+  if((x.url_resolved||x.url||"").startsWith("https://"))score+=30;
+  if(Number(x.lastcheckok)===1)score+=20;
+  if(Number(x.hls)!==1)score+=5;
+  return score;
+}
+
+async function resolveSearch(s){
+  let found=[];
+  for(const base of API){
+    for(const q of s.search){
+      try{
+        const r=await fetch(base+"/json/stations/search?name="+encodeURIComponent(q)+"&hidebroken=true&limit=30");
+        if(!r.ok)continue;
+        const data=await r.json();
+        found.push(...data.map(x=>({x,q})));
+      }catch(e){}
+    }
+    if(found.length)break;
+  }
+  if(!found.length){setSeatState(s,"NOT FOUND");updateCounts();return}
+  found.sort((a,b)=>streamScore(b.x,b.q)-streamScore(a.x,a.q));
+  const viable=found.map(o=>o.x).filter(x=>Number(x.lastcheckok)===1);
+  const urls=[];
+  viable.forEach(x=>{const u=x.url_resolved||x.url;if(u&&u.startsWith("https://"))urls.push(u)});
+  viable.forEach(x=>{const u=x.url_resolved||x.url;if(u&&!urls.includes(u))urls.push(u)});
+  const best=viable[0]||found[0].x;
+  setReady(s,urls,`${best.bitrate||"?"} kbps ${(best.codec||"").toUpperCase()} · ${best.country||s.detail}`);
+}
+
+async function resolveAll(){
+  build();
+  await Promise.allSettled(specs.map(async s=>s.direct?setReady(s,s.direct,s.detail):resolveSearch(s)));
+  const ready=specs.filter(s=>s.ready).length;
+  $("status").textContent=`${ready} performers ready.`;
+  $("start").disabled=ready===0;$("muteAll").disabled=ready===0;updateCounts();
+}
+
+async function tryPlay(s){
+  setSeatState(s,"CONNECTING");
+  for(let i=s.candidateIndex;i<s.urls.length;i++){
+    s.candidateIndex=i;s.audio.src=s.urls[i];s.audio.volume=1;s.audio.muted=s.muted;
+    try{await s.audio.play();s.playing=true;setSeatState(s,s.muted?"MUTED":"LIVE");return true}catch(e){}
+  }
+  s.playing=false;setSeatState(s,"STREAM ERROR");return false;
+}
+
+async function startAll(){
+  app.started=true;$("start").classList.add("active");$("stop").disabled=false;$("status").textContent="Starting orchestra…";
+  await Promise.allSettled(specs.filter(s=>s.ready).map(s=>tryPlay(s)));
+  const live=specs.filter(s=>s.playing).length;$("status").textContent=`${live} performers broadcasting.`;updateCounts();
+}
+
+function toggleSeat(s){
+  if(!s.ready)return;
+  s.muted=!s.muted;s.audio.muted=s.muted;
+  const b=$("seat-"+s.id);b.classList.toggle("muted",s.muted);
+  if(s.playing)setSeatState(s,s.muted?"MUTED":"LIVE");else setSeatState(s,s.muted?"MUTED · READY":"READY");
+  updateCounts();
+}
+
+function muteAll(){
+  const ready=specs.filter(s=>s.ready);const shouldMute=!ready.every(s=>s.muted);
+  for(const s of ready){s.muted=shouldMute;s.audio.muted=shouldMute;$("seat-"+s.id).classList.toggle("muted",shouldMute);if(s.playing)setSeatState(s,shouldMute?"MUTED":"LIVE")}
+  $("muteAll").textContent=shouldMute?"UNMUTE ALL":"MUTE ALL";updateCounts();
+}
+
+function stopAll(){
+  for(const s of specs){if(!s.audio)continue;s.audio.pause();s.playing=false;if(s.ready)setSeatState(s,s.muted?"MUTED · READY":"READY")}
+  app.started=false;$("start").classList.remove("active");$("stop").disabled=true;$("status").textContent="Stopped.";updateCounts();
+}
+
+function handleAudioError(s){
+  s.playing=false;
+  if(!app.started){setSeatState(s,"STREAM ERROR");updateCounts();return}
+  if(s.candidateIndex<s.urls.length-1){s.candidateIndex++;tryPlay(s)}else{setSeatState(s,"STREAM ERROR");updateCounts()}
+}
+
+function updateCounts(){
+  const ready=specs.filter(s=>s.ready).length,audible=specs.filter(s=>s.playing&&!s.muted).length;
+  $("readyCount").textContent=`${ready} / ${specs.length} READY`;$("audibleCount").textContent=`${audible} AUDIBLE`;
+}
+
+function showTip(s,e){
+  const t=$("tooltip");
+  const st=s.playing?(s.muted?"MUTED":"LIVE"):(s.ready?"READY":"UNRESOLVED");
+  t.innerHTML=`<div class="tipinstrument">${esc(s.instrument)}</div><div class="tipstation">${esc(s.station)}</div><div class="tipmeta">${esc(s.purity)}<br>${esc(s.resolvedDetail||s.detail)}<br>${esc(st)}</div>`;
+  t.classList.add("show");t.setAttribute("aria-hidden","false");moveTip(e);
+}
+function moveTip(e){const t=$("tooltip"),pad=12;let x=e.clientX+14,y=e.clientY+14;const r=t.getBoundingClientRect();if(x+r.width>innerWidth-pad)x=e.clientX-r.width-14;if(y+r.height>innerHeight-pad)y=e.clientY-r.height-14;t.style.left=x+"px";t.style.top=y+"px"}
+function hideTip(){const t=$("tooltip");t.classList.remove("show");t.setAttribute("aria-hidden","true")}
+
+$("start").addEventListener("click",startAll);
+$("muteAll").addEventListener("click",muteAll);
+$("stop").addEventListener("click",stopAll);
+resolveAll();
+</script>
+</body>
+</html>
