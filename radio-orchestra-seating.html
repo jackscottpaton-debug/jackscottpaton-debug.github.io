@@ -16,19 +16,21 @@ button{font-family:Arial,Helvetica,sans-serif}
 .topbar button:hover,.topbar button.active{background:#111;color:#fff}
 .topbar button:disabled{color:#bbb;background:#fff;cursor:default}
 .statusbar{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:7px 10px;font-size:11px;line-height:1.2;text-transform:uppercase}
-.orchestra{position:relative;max-width:1180px;margin:0 auto;padding:34px 16px 80px;min-height:720px}
-.row{display:flex;justify-content:center;align-items:flex-end;gap:16px;margin:0 auto 34px}
-.row.back{max-width:760px}
-.row.middle{max-width:930px}
-.row.front{max-width:1050px}
-.row.voice{max-width:520px;margin-top:48px}
-.seat{position:relative;appearance:none;width:150px;min-height:82px;background:#fff;color:#111;border:1px solid #111;border-radius:0;padding:10px;text-align:left;cursor:pointer;transition:none}
+.orchestra{position:relative;max-width:1320px;margin:0 auto;padding:28px 16px 80px;min-height:720px}
+.row{display:flex;justify-content:center;align-items:flex-end;flex-wrap:wrap;gap:8px;margin:0 auto 24px}
+.row::before{content:attr(data-label);width:100%;padding-bottom:1px;text-align:center;font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.row.back{max-width:1050px}
+.row.brass,.row.winds{max-width:940px}
+.row.world{max-width:1220px}
+.row.strings{max-width:1180px}
+.row.voice{max-width:760px;margin-top:38px}
+.seat{position:relative;appearance:none;width:116px;min-height:72px;background:#fff;color:#111;border:1px solid #111;border-radius:0;padding:8px;text-align:left;cursor:pointer;transition:none}
 .seat:hover{background:#f5f5f5}
 .seat.muted{background:#111;color:#fff}
 .seat.unavailable{color:#aaa;border-color:#aaa}
 .seat.unavailable:hover{background:#fff}
-.instrument{font-size:17px;line-height:1.02;letter-spacing:-.35px;text-transform:uppercase}
-.seatstate{position:absolute;left:10px;bottom:8px;font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.04em;color:#777}
+.instrument{font-size:14px;line-height:1.02;letter-spacing:-.25px;text-transform:uppercase}
+.seatstate{position:absolute;left:8px;bottom:7px;font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.04em;color:#777}
 .seat.muted .seatstate{color:#ccc}
 .seat.unavailable .seatstate{color:#aaa}
 .tooltip{position:fixed;z-index:60;display:none;pointer-events:none;width:270px;background:#fff;color:#111;border:1px solid #111;padding:9px 10px;font-size:11px;line-height:1.35}
@@ -40,13 +42,14 @@ button{font-family:Arial,Helvetica,sans-serif}
 .footer{border-top:1px solid #111;padding:8px 10px 36px;font-size:10px;color:#777;text-transform:uppercase}
 @media(max-width:850px){
   .orchestra{padding-left:10px;padding-right:10px;min-height:0}
-  .row{gap:9px;margin-bottom:22px;flex-wrap:wrap;max-width:100%!important}
+  .row{gap:9px;margin-bottom:22px;max-width:100%!important}
   .seat{width:132px;min-height:74px}
   .instrument{font-size:15px}
 }
 @media(max-width:520px){
   .orchestra{padding-top:22px}
   .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}
+  .row::before{grid-column:1/-1}
   .seat{width:100%;min-height:70px}
   .row.voice{margin-top:24px}
 }
@@ -57,20 +60,23 @@ button{font-family:Arial,Helvetica,sans-serif}
   <button id="start" disabled>START ALL</button>
   <button id="muteAll" disabled>MUTE ALL</button>
   <button id="stop" disabled>STOP</button>
+  <button id="autoMix" class="active">AUTO MIX: ON</button>
 </div>
 <div class="statusbar">
   <span id="status">Resolving orchestra…</span>
-  <span><span id="readyCount">0 / 12 READY</span> · <span id="audibleCount">0 AUDIBLE</span></span>
+  <span><span id="readyCount">0 READY · 6 RELAY · 17 OPEN</span> · <span id="audibleCount">0 AUDIBLE</span></span>
 </div>
 
 <main class="orchestra" id="orchestra">
-  <div class="row back" data-row="back"></div>
-  <div class="row middle" data-row="middle"></div>
-  <div class="row front" data-row="front"></div>
-  <div class="row voice" data-row="voice"></div>
+  <div class="row back" data-row="back" data-label="Keyboards / percussion"></div>
+  <div class="row brass" data-row="brass" data-label="Brass / reeds"></div>
+  <div class="row winds" data-row="winds" data-label="Winds / breath"></div>
+  <div class="row world" data-row="world" data-label="World instruments"></div>
+  <div class="row strings" data-row="strings" data-label="Strings"></div>
+  <div class="row voice" data-row="voice" data-label="Unfixed / electronic / voice"></div>
   <div class="conductor">YOU / CONDUCTOR</div>
 </main>
-<div class="footer">RADIO ORCHESTRA · TEST 01</div>
+<div class="footer">RADIO ORCHESTRA · 50 CHAIRS</div>
 <div class="tooltip" id="tooltip" aria-hidden="true"></div>
 
 <script>
@@ -81,58 +87,65 @@ const API=[
 ];
 
 const specs=[
-  {
-    id:"organ",row:"back",instrument:"ORGAN",station:"Radio Art — Organ",
-    search:["Radio Art Organ","Radio Art - Organ"],purity:"mostly solo / occasional ensemble",detail:"Radio Art"
-  },
-  {
-    id:"harpsichord",row:"back",instrument:"HARPSICHORD",station:"Radio Art — Harpsichord",
-    search:["Radio Art Harpsichord","Radio Art - Harpsichord"],purity:"mostly solo",detail:"Radio Art"
-  },
-  {
-    id:"steelpan",row:"back",instrument:"STEELPAN",station:"Steelpan Music Radio",
-    search:["Steelpan Music Radio"],purity:"instrument-focused / may include ensembles",detail:"independent specialist radio"
-  },
-  {
-    id:"harp",row:"middle",instrument:"HARP",station:"Radio Art — Solo Harp",
-    search:["Radio Art Solo Harp","Radio Art - Solo Harp"],purity:"solo",detail:"Radio Art"
-  },
-  {
-    id:"guitar",row:"middle",instrument:"GUITAR",station:"Radio Art — Solo Guitar",
-    search:["Radio Art Solo Guitar","Radio Art - Solo Guitar"],purity:"solo / fingerstyle",detail:"Radio Art"
-  },
-  {
-    id:"setar",row:"middle",instrument:"SETAR",station:"Radio Art — Setar",
-    search:["Radio Art Setar","Radio Art - Setar"],purity:"mostly solo",detail:"Persian setar · Radio Art"
-  },
-  {
-    id:"chinese",row:"middle",instrument:"CHINESE CLASSICAL",station:"Chinese Classical Music Online Radio",
-    direct:["https://radio.chinesemusicworld.com/chinesemusic.ogg"],purity:"mixed Chinese instruments",detail:"HTTPS OGG · ChineseMusicWorld"
-  },
-  {
-    id:"piano",row:"front",instrument:"PIANO",station:"Whisperings — Solo Piano Radio",
-    direct:["https://pianosolo.streamguys1.com/live"],purity:"solo",detail:"StreamGuys · HTTPS"
-  },
-  {
-    id:"flute",row:"front",instrument:"FLUTE",station:"Radio Art — Solo Flute",
-    search:["Radio Art Solo Flute","Radio Art - Solo Flute"],purity:"solo",detail:"Radio Art"
-  },
-  {
-    id:"clarinet",row:"front",instrument:"CLARINET",station:"1AU CLARINET / Clarinet Radio",
-    search:["1AU CLARINET","Clarinet Radio Easy","Clarinet Radio"],purity:"instrument-themed / audition",detail:"fringe UK internet radio"
-  },
-  {
-    id:"soloist",row:"front",instrument:"UNKNOWN SOLOIST",station:"Radio Art — Solo Classical Instruments",
-    search:["Radio Art Solo Classical Instruments","Radio Art Solo Instruments"],purity:"solo instrument changes track-to-track",detail:"Radio Art"
-  },
-  {
-    id:"voice",row:"voice",instrument:"A CAPPELLA",station:"Radio Art — A Cappella",
-    search:["Radio Art A Cappella","Radio Art - A Cappella"],purity:"unaccompanied voices / choir",detail:"Radio Art"
-  }
+  {id:"organ",row:"back",instrument:"ORGAN",station:"Radio Art — Organ",direct:["https://live.radioart.com/fOrgan.mp3"],purity:"mostly solo / occasional ensemble",detail:"Radio Art · HTTPS"},
+  {id:"harpsichord",row:"back",instrument:"HARPSICHORD",station:"Radio Art — Harpsichord",direct:["https://live.radioart.com/fHarpsichord.mp3"],purity:"mostly solo",detail:"Radio Art · HTTPS"},
+  {id:"steelpan",row:"back",instrument:"STEELPAN",station:"Steelpan Music Radio",direct:["https://listen.steelpanmusicradio.com/nowplaying"],purity:"instrument-focused / may include ensembles",detail:"independent specialist radio · HTTPS"},
+  {id:"piano",row:"back",instrument:"PIANO",station:"Whisperings — Solo Piano Radio",direct:["https://pianosolo.streamguys1.com/live"],purity:"solo",detail:"StreamGuys · HTTPS"},
+  {id:"marimba",row:"back",instrument:"MARIMBA",station:"Radio IMER — Marimba region",direct:["https://s2.mexside.net/8050/stream"],purity:"regional music / marimba-associated, not solo-only",detail:"Radio IMER · audition"},
+  {id:"vibraphone",row:"back",instrument:"VIBRAPHONE",station:"Ella — Vibraphone Jazz",direct:["https://stream.ella-radio.de/ella-vibraphone-jazz/mp3-192/"],purity:"vibraphone-led jazz",detail:"Ella Radio · HTTPS"},
+  {id:"bowls",row:"back",instrument:"SINGING BOWLS",station:"Longplayer",relay:["http://icecast.spc.org:8000/longplayer"],purity:"continuous composition using singing bowls",detail:"verified source is HTTP · HTTPS relay needed"},
+  {id:"drums",row:"back",instrument:"DRUMS / BREAKS",station:"Meiji Radio — Drums",direct:["https://radio.meiji.industries/drums"],purity:"drum and break-focused",detail:"Meiji Radio · HTTPS"},
+
+  {id:"accordion",row:"brass",instrument:"ACCORDION / BAYAN",station:"Radio Caprice — Accordion / Bayan",relay:true,purity:"accordion and bayan-focused",detail:"specialist source found · HTTPS relay needed"},
+  {id:"harmonica",row:"brass",instrument:"HARMONICA",station:"Radio Caprice — Harmonica",relay:true,purity:"harmonica-focused",detail:"specialist source found · HTTPS relay needed"},
+  {id:"trumpet",row:"brass",instrument:"TRUMPET",station:"1001 Trumpet Song",direct:["https://stream.laut.fm/1001-trumpet-song"],purity:"trumpet-themed programming",detail:"laut.fm · HTTPS"},
+  {id:"trombone",row:"brass",instrument:"TROMBONE",station:"Trombone Jazz Radio",direct:["https://streaming.live365.com/a63077"],purity:"trombone-led jazz",detail:"Live365 · HTTPS"},
+  {id:"saxophone",row:"brass",instrument:"SAXOPHONE",station:"Ella — Saxophone Jazz",direct:["https://stream.ella-radio.de/ella-saxophon-jazz/mp3-192/"],purity:"saxophone-led jazz",detail:"Ella Radio · HTTPS"},
+  {id:"horn",row:"brass",instrument:"FRENCH HORN",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"tuba",row:"brass",instrument:"TUBA",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"false-positive station names rejected"},
+
+  {id:"flute",row:"winds",instrument:"FLUTE",station:"Radio Art — Solo Flute",direct:["https://live.radioart.com/fSolo_flute.mp3"],purity:"solo",detail:"Radio Art · HTTPS"},
+  {id:"clarinet",row:"winds",instrument:"CLARINET",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"previous specialist listing is no longer verifiable"},
+  {id:"oboe",row:"winds",instrument:"OBOE",station:"Radio Caprice — Oboe",relay:true,purity:"oboe-focused",detail:"specialist source found · HTTPS relay needed"},
+  {id:"bassoon",row:"winds",instrument:"BASSOON",station:"Radio Caprice — Bassoon",relay:true,purity:"bassoon-focused",detail:"specialist source found · HTTPS relay needed"},
+  {id:"panflute",row:"winds",instrument:"PAN FLUTE",station:"Epic Classical — Pan Flute",direct:["https://stream.epic-classical.com/classical-pan-flute"],purity:"pan-flute classical",detail:"Epic Classical · HTTPS"},
+  {id:"shakuhachi",row:"winds",instrument:"SHAKUHACHI",station:"Radio Art — Shakuhachi",direct:["https://live.radioart.com/fShakuhachi.mp3"],purity:"shakuhachi-focused",detail:"Radio Art · HTTPS"},
+  {id:"didgeridoo",row:"winds",instrument:"DIDGERIDOO",station:"Radio Art — Didgeridoo",direct:["https://live.radioart.com/fDidgeridoo.mp3"],purity:"didgeridoo-focused",detail:"Radio Art · HTTPS"},
+
+  {id:"setar",row:"world",instrument:"SETAR",station:"Radio Art — Setar",direct:["https://live.radioart.com/fSetar.mp3"],purity:"mostly solo",detail:"Persian setar · Radio Art"},
+  {id:"chinese",row:"world",instrument:"CHINESE CLASSICAL",station:"Chinese Classical Music Online Radio",direct:["https://radio.chinesemusicworld.com/chinesemusic.ogg"],purity:"mixed Chinese instruments",detail:"ChineseMusicWorld · HTTPS OGG"},
+  {id:"koto",row:"world",instrument:"KOTO",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"KOTO-FM call-sign false positive rejected"},
+  {id:"guqin",row:"world",instrument:"GUQIN",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"guzheng",row:"world",instrument:"GUZHENG",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"erhu",row:"world",instrument:"ERHU",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"oud",row:"world",instrument:"OUD",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"unrelated oldies stations rejected"},
+  {id:"sitar",row:"world",instrument:"SITAR",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"mixed Indian classical stations remain candidates"},
+  {id:"sarod",row:"world",instrument:"SAROD",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"mixed Indian classical stations remain candidates"},
+  {id:"tabla",row:"world",instrument:"TABLA",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"mixed Indian classical stations remain candidates"},
+  {id:"kora",row:"world",instrument:"KORA",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"radio call-sign false positives rejected"},
+  {id:"mbira",row:"world",instrument:"MBIRA",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"kalimba",row:"world",instrument:"KALIMBA",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+
+  {id:"harp",row:"strings",instrument:"HARP",station:"Radio Art — Solo Harp",direct:["https://live.radioart.com/fSolo_harp.mp3"],purity:"solo",detail:"Radio Art · HTTPS"},
+  {id:"guitar",row:"strings",instrument:"GUITAR",station:"Radio Art — Solo Guitar",direct:["https://live.radioart.com/fSolo_guitar.mp3"],purity:"solo / fingerstyle",detail:"Radio Art · HTTPS"},
+  {id:"violin",row:"strings",instrument:"VIOLIN",station:"Epic Classical — Violin",direct:["https://stream.epic-classical.com/classical-violin"],purity:"violin classical",detail:"Epic Classical · HTTPS"},
+  {id:"viola",row:"strings",instrument:"VIOLA CAIPIRA",station:"Viola Caipira Radio",direct:["https://centova.euroti.com.br:20055/stream"],purity:"viola-caipira-focused",detail:"Brazilian specialist stream · HTTPS"},
+  {id:"cello",row:"strings",instrument:"CELLO",station:"Radio Art — Cello Works",direct:["https://live.radioart.com/fCello_works.mp3"],purity:"cello-focused works",detail:"Radio Art · HTTPS"},
+  {id:"doublebass",row:"strings",instrument:"DOUBLE BASS",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"unrelated pop station false positive rejected"},
+  {id:"lute",row:"strings",instrument:"LUTE",station:"Radio Art — Lute",direct:["https://live.radioart.com/fLute.mp3"],purity:"lute-focused",detail:"Radio Art · HTTPS"},
+  {id:"ukulele",row:"strings",instrument:"UKULELE",station:"Aloha Joe — Ukulele Island",relay:["http://s3.voscast.com:8662/stream"],purity:"ukulele and island programming",detail:"verified source is HTTP · HTTPS relay needed"},
+  {id:"mandolin",row:"strings",instrument:"MANDOLIN",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"banjo",row:"strings",instrument:"BANJO",station:"Jazz Banjo Radio",direct:["https://streaming.live365.com/a57039"],purity:"banjo-led jazz",detail:"Live365 · HTTPS"},
+
+  {id:"soloist",row:"voice",instrument:"UNKNOWN SOLOIST",station:"Radio Art — Solo Classical Instruments",direct:["https://live.radioart.com/fSolo_instruments.mp3"],purity:"solo instrument changes track-to-track",detail:"Radio Art · HTTPS"},
+  {id:"voice",row:"voice",instrument:"A CAPPELLA",station:"Radio Art — A Cappella",direct:["https://live.radioart.com/fA_Cappella.mp3"],purity:"unaccompanied voices / choir",detail:"Radio Art · HTTPS"},
+  {id:"theremin",row:"voice",instrument:"THEREMIN",station:"Open chair",open:true,purity:"instrument-specific source required",detail:"no honest current specialist stream verified"},
+  {id:"chiptune",row:"voice",instrument:"CHIPTUNE",station:"Zelerk — Chiptune",direct:["https://radio.zelerk.com/listen/chiptune/stream.mp3"],purity:"synthesized chiptune",detail:"Zelerk · HTTPS"},
+  {id:"spoken",row:"voice",instrument:"SPOKEN WORD",station:"The Indie Beat — Spoken",direct:["https://azura.theindiebeat.fm/listen/the_indie_beat_radio_-_spoken/radio.mp3"],purity:"spoken-word programming",detail:"The Indie Beat · HTTPS"}
 ];
 
 const $=id=>document.getElementById(id);
-const app={started:false};
+const app={started:false,autoMix:true,ctx:null,master:null,limiter:null,mixTimer:null};
 
 function esc(s){return String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 
@@ -143,7 +156,7 @@ function build(){
     b.className="seat unavailable";
     b.id=`seat-${s.id}`;
     b.type="button";
-    b.disabled=true;
+    b.setAttribute("aria-disabled","true");
     b.innerHTML=`<div class="instrument">${esc(s.instrument)}</div><div class="seatstate" id="state-${s.id}">RESOLVING</div>`;
     row.appendChild(b);
     const a=new Audio();
@@ -151,7 +164,7 @@ function build(){
     a.volume=1;
     a.muted=false;
     a.playsInline=true;
-    s.audio=a;s.ready=false;s.playing=false;s.muted=false;s.urls=[];s.candidateIndex=0;
+    s.audio=a;s.ready=false;s.playing=false;s.muted=false;s.urls=[];s.candidateIndex=0;s.mixMode="PENDING";
     a.addEventListener("playing",()=>{s.playing=true;setSeatState(s,s.muted?"MUTED":"LIVE");updateCounts()});
     a.addEventListener("waiting",()=>{if(s.playing)setSeatState(s,"BUFFERING")});
     a.addEventListener("stalled",()=>{if(s.playing)setSeatState(s,"BUFFERING")});
@@ -169,7 +182,7 @@ function setReady(s,urls,label){
   const clean=[...new Set((urls||[]).filter(Boolean))];
   if(!clean.length){setSeatState(s,"NO STREAM");return}
   s.urls=clean;s.ready=true;s.candidateIndex=0;s.audio.src=clean[0];
-  const b=$("seat-"+s.id);b.disabled=false;b.classList.remove("unavailable");
+  const b=$("seat-"+s.id);b.setAttribute("aria-disabled","false");b.classList.remove("unavailable");
   if(label)s.resolvedDetail=label;
   setSeatState(s,"READY");updateCounts();
 }
@@ -207,18 +220,95 @@ async function resolveSearch(s){
   setReady(s,urls,`${best.bitrate||"?"} kbps ${(best.codec||"").toUpperCase()} · ${best.country||s.detail}`);
 }
 
+async function supportsCorsAudio(url){
+  if(!url||!url.startsWith("https://"))return false;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),4500);
+  try{
+    const r=await fetch(url,{method:"GET",mode:"cors",cache:"no-store",signal:controller.signal});
+    const ok=r.ok;
+    if(r.body)r.body.cancel().catch(()=>{});
+    controller.abort();
+    return ok;
+  }catch(e){return false}finally{clearTimeout(timer)}
+}
+
+function ensureMixer(){
+  if(app.ctx)return app.ctx;
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return null;
+  const ctx=new AudioCtx();
+  const master=ctx.createGain();
+  const limiter=ctx.createDynamicsCompressor();
+  limiter.threshold.value=-6;limiter.knee.value=3;limiter.ratio.value=16;limiter.attack.value=.003;limiter.release.value=.25;
+  master.connect(limiter);limiter.connect(ctx.destination);
+  app.ctx=ctx;app.master=master;app.limiter=limiter;
+  return ctx;
+}
+
+function prepareMixer(s,url){
+  if(s.graph||s.mixMode==="RAW")return;
+  if(!app.autoMix||!s.corsOK){s.mixMode="RAW";return}
+  const ctx=ensureMixer();
+  if(!ctx){s.mixMode="RAW";return}
+  try{
+    s.audio.crossOrigin="anonymous";s.audio.src=url;s.audio.load();
+    const source=ctx.createMediaElementSource(s.audio);
+    const analyser=ctx.createAnalyser();analyser.fftSize=1024;analyser.smoothingTimeConstant=.72;
+    const gain=ctx.createGain();gain.gain.value=1;
+    const compressor=ctx.createDynamicsCompressor();
+    compressor.threshold.value=-18;compressor.knee.value=18;compressor.ratio.value=4;compressor.attack.value=.012;compressor.release.value=.3;
+    source.connect(analyser);analyser.connect(gain);gain.connect(compressor);compressor.connect(app.master);
+    s.graph={source,analyser,gain,compressor,data:new Float32Array(analyser.fftSize)};s.mixMode="AUTO";s.mixGain=1;
+  }catch(e){
+    s.mixMode="RAW";s.audio.removeAttribute("crossorigin");s.audio.src=url;s.audio.load();
+  }
+}
+
+function runAutoMix(){
+  const mixed=specs.filter(s=>s.graph&&s.playing&&!s.muted);
+  const now=app.ctx?app.ctx.currentTime:0;
+  for(const s of specs.filter(s=>s.graph)){
+    let desired=1;
+    if(app.autoMix&&s.playing&&!s.muted){
+      s.graph.analyser.getFloatTimeDomainData(s.graph.data);
+      let sum=0;for(const v of s.graph.data)sum+=v*v;
+      const rms=Math.sqrt(sum/s.graph.data.length);
+      if(rms>.004)desired=Math.max(.3,Math.min(3,.12/rms));
+    }
+    s.mixGain=(s.mixGain||1)*.82+desired*.18;
+    s.graph.gain.gain.setTargetAtTime(s.mixGain,now,.12);
+  }
+  if(app.master){
+    const safe=Math.min(1,1.4/Math.sqrt(Math.max(1,mixed.length)));
+    app.master.gain.setTargetAtTime(safe,now,.18);
+  }
+}
+
+function startMixLoop(){
+  if(app.mixTimer)return;
+  app.mixTimer=setInterval(runAutoMix,250);
+}
+
 async function resolveAll(){
   build();
-  await Promise.allSettled(specs.map(async s=>s.direct?setReady(s,s.direct,s.detail):resolveSearch(s)));
+  await Promise.allSettled(specs.map(async s=>{
+    if(s.open){setSeatState(s,"OPEN CHAIR");return}
+    if(s.relay){setSeatState(s,"RELAY NEEDED");return}
+    return s.direct?setReady(s,s.direct,s.detail):resolveSearch(s);
+  }));
   const ready=specs.filter(s=>s.ready).length;
-  $("status").textContent=`${ready} performers ready.`;
+  $("status").textContent="Checking AUTO MIX compatibility…";
+  await Promise.allSettled(specs.filter(s=>s.ready).map(async s=>{s.corsOK=await supportsCorsAudio(s.urls[0]);s.mixMode=s.corsOK?"AUTO":"RAW"}));
+  const levelled=specs.filter(s=>s.corsOK).length;
+  $("status").textContent=`${ready} performers ready across ${specs.length} chairs · ${levelled} AUTO MIX compatible.`;
   $("start").disabled=ready===0;$("muteAll").disabled=ready===0;updateCounts();
 }
 
 async function tryPlay(s){
   setSeatState(s,"CONNECTING");
   for(let i=s.candidateIndex;i<s.urls.length;i++){
-    s.candidateIndex=i;s.audio.src=s.urls[i];s.audio.volume=1;s.audio.muted=s.muted;
+    s.candidateIndex=i;prepareMixer(s,s.urls[i]);s.audio.src=s.urls[i];s.audio.volume=s.graph?1:(app.autoMix?.72:1);s.audio.muted=s.muted;
     try{await s.audio.play();s.playing=true;setSeatState(s,s.muted?"MUTED":"LIVE");return true}catch(e){}
   }
   s.playing=false;setSeatState(s,"STREAM ERROR");return false;
@@ -226,8 +316,10 @@ async function tryPlay(s){
 
 async function startAll(){
   app.started=true;$("start").classList.add("active");$("stop").disabled=false;$("status").textContent="Starting orchestra…";
+  if(app.ctx&&app.ctx.state==="suspended")await app.ctx.resume();
   await Promise.allSettled(specs.filter(s=>s.ready).map(s=>tryPlay(s)));
-  const live=specs.filter(s=>s.playing).length;$("status").textContent=`${live} performers broadcasting.`;updateCounts();
+  startMixLoop();runAutoMix();
+  const live=specs.filter(s=>s.playing).length;$("status").textContent=`${live} performers broadcasting · AUTO MIX ${app.autoMix?"ON":"OFF"}.`;updateCounts();
 }
 
 function toggleSeat(s){
@@ -256,14 +348,16 @@ function handleAudioError(s){
 }
 
 function updateCounts(){
-  const ready=specs.filter(s=>s.ready).length,audible=specs.filter(s=>s.playing&&!s.muted).length;
-  $("readyCount").textContent=`${ready} / ${specs.length} READY`;$("audibleCount").textContent=`${audible} AUDIBLE`;
+  const ready=specs.filter(s=>s.ready).length,relay=specs.filter(s=>s.relay).length,open=specs.filter(s=>s.open).length;
+  const audible=specs.filter(s=>s.playing&&!s.muted).length;
+  $("readyCount").textContent=`${ready} READY · ${relay} RELAY · ${open} OPEN`;$("audibleCount").textContent=`${audible} AUDIBLE`;
 }
 
 function showTip(s,e){
   const t=$("tooltip");
-  const st=s.playing?(s.muted?"MUTED":"LIVE"):(s.ready?"READY":"UNRESOLVED");
-  t.innerHTML=`<div class="tipinstrument">${esc(s.instrument)}</div><div class="tipstation">${esc(s.station)}</div><div class="tipmeta">${esc(s.purity)}<br>${esc(s.resolvedDetail||s.detail)}<br>${esc(st)}</div>`;
+  const st=s.playing?(s.muted?"MUTED":"LIVE"):(s.ready?"READY":s.relay?"RELAY NEEDED":s.open?"OPEN CHAIR":"UNRESOLVED");
+  const mix=s.ready?(s.mixMode==="AUTO"?"AUTO MIX COMPATIBLE":"RAW VOLUME · SOURCE BLOCKS ANALYSIS"):"NOT CONNECTED";
+  t.innerHTML=`<div class="tipinstrument">${esc(s.instrument)}</div><div class="tipstation">${esc(s.station)}</div><div class="tipmeta">${esc(s.purity)}<br>${esc(s.resolvedDetail||s.detail)}<br>${esc(st)} · ${esc(mix)}</div>`;
   t.classList.add("show");t.setAttribute("aria-hidden","false");moveTip(e);
 }
 function moveTip(e){const t=$("tooltip"),pad=12;let x=e.clientX+14,y=e.clientY+14;const r=t.getBoundingClientRect();if(x+r.width>innerWidth-pad)x=e.clientX-r.width-14;if(y+r.height>innerHeight-pad)y=e.clientY-r.height-14;t.style.left=x+"px";t.style.top=y+"px"}
@@ -272,6 +366,12 @@ function hideTip(){const t=$("tooltip");t.classList.remove("show");t.setAttribut
 $("start").addEventListener("click",startAll);
 $("muteAll").addEventListener("click",muteAll);
 $("stop").addEventListener("click",stopAll);
+$("autoMix").addEventListener("click",()=>{
+  app.autoMix=!app.autoMix;$("autoMix").textContent=`AUTO MIX: ${app.autoMix?"ON":"OFF"}`;$("autoMix").classList.toggle("active",app.autoMix);
+  for(const s of specs.filter(s=>s.ready&&!s.graph))s.audio.volume=app.autoMix?.72:1;
+  runAutoMix();
+  if(app.started)$("status").textContent=`AUTO MIX ${app.autoMix?"ON":"OFF"}.`;
+});
 resolveAll();
 </script>
 </body>
