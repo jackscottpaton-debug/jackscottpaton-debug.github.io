@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>CERN HUMAN ARCHIVE — TEST</title>
+<style>
+  :root{--bar:34px;--pad:12px;--line:#d9d9d9;--text:#111;--muted:#6d6d6d;--bg:#fff}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;font-size:12px}
+  body{overflow:hidden}
+  button,a{font:inherit;color:inherit}
+  .topbar{height:var(--bar);border-bottom:1px solid #111;display:flex;align-items:center;gap:18px;padding:0 var(--pad);white-space:nowrap;background:#fff;position:relative;z-index:5}
+  .brand{font-weight:700;letter-spacing:.02em}
+  .topbar button,.topbar a{border:0;background:none;padding:0;text-decoration:none;cursor:pointer}
+  .topbar button:hover,.topbar a:hover{text-decoration:underline}
+  .spacer{flex:1}
+  .saved-count{font-variant-numeric:tabular-nums}
+  main{height:calc(100% - var(--bar));display:grid;grid-template-columns:minmax(0,1fr) 258px}
+  .stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:18px 22px 56px}
+  .stage img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none}
+  .image-fallback{display:none;text-align:center;max-width:460px;line-height:1.5;color:var(--muted)}
+  .image-fallback strong{display:block;color:var(--text);font-weight:400;margin-bottom:7px}
+  .hud{position:absolute;left:12px;right:12px;bottom:9px;display:flex;align-items:center;gap:14px;color:var(--muted);pointer-events:none}
+  .hud .id{color:var(--text)}
+  .hud .position{margin-left:auto;font-variant-numeric:tabular-nums}
+  .save-flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:.04em;pointer-events:none;opacity:0}
+  .save-flash.on{animation:flash .34s ease-out}
+  @keyframes flash{0%{opacity:1}100%{opacity:0}}
+  aside{border-left:1px solid var(--line);padding:12px;overflow:auto;background:#fff}
+  aside.hidden{display:none}
+  .meta-block{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+  .label{color:var(--muted);margin-bottom:3px}
+  .value{line-height:1.35;word-break:break-word}
+  .note{width:100%;min-height:76px;resize:vertical;border:1px solid var(--line);border-radius:0;padding:7px;font:inherit;outline:none}
+  .note:focus{border-color:#111}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-top:12px}
+  .controls button{border:0;background:#fff;padding:8px;text-align:left;cursor:pointer}
+  .controls button:hover{background:#f5f5f5}
+  .controls .wide{grid-column:1/-1}
+  .saved{font-weight:700}
+  .mobile-controls{display:none}
+  @media (max-width:740px){
+    main{grid-template-columns:1fr}
+    aside{position:absolute;right:0;top:var(--bar);bottom:0;width:min(82vw,300px);z-index:4;box-shadow:-8px 0 18px rgba(0,0,0,.05)}
+    .topbar{gap:12px}
+    .desktop-only{display:none}
+    .stage{padding:10px 10px 66px}
+    .mobile-controls{display:flex;position:absolute;left:10px;right:10px;bottom:30px;height:28px;border:1px solid var(--line);background:#fff}
+    .mobile-controls button{flex:1;border:0;border-right:1px solid var(--line);background:#fff;padding:0}
+    .mobile-controls button:last-child{border-right:0}
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">CERN HUMAN ARCHIVE</span>
+    <button id="prevTop" class="desktop-only">PREV</button>
+    <button id="nextTop" class="desktop-only">NEXT</button>
+    <button id="saveTop">SAVE</button>
+    <button id="infoTop">INFO</button>
+    <span class="spacer"></span>
+    <span id="savedCount" class="saved-count">0 SAVED</span>
+    <button id="exportTop">EXPORT</button>
+  </header>
+
+  <main>
+    <section class="stage" id="stage">
+      <img id="photo" alt="CERN archive image" referrerpolicy="no-referrer" />
+      <div class="image-fallback" id="fallback">
+        <strong id="fallbackId"></strong>
+        CERN did not serve this image to the page. Use OPEN RECORD to inspect it; the interface and save/export workflow still work.
+      </div>
+      <div class="save-flash" id="flash">SAVED</div>
+      <div class="mobile-controls">
+        <button id="prevMobile">←</button><button id="saveMobile">SAVE</button><button id="nextMobile">→</button>
+      </div>
+      <div class="hud">
+        <span id="hudDate"></span>
+        <span class="id" id="hudId"></span>
+        <span id="hudSaved"></span>
+        <span class="position" id="hudPosition"></span>
+      </div>
+    </section>
+
+    <aside id="infoPanel">
+      <div class="meta-block"><div class="label">ARCHIVE ID</div><div class="value" id="metaId"></div></div>
+      <div class="meta-block"><div class="label">DATE</div><div class="value" id="metaDate"></div></div>
+      <div class="meta-block"><div class="label">CONTEXT</div><div class="value" id="metaTitle"></div></div>
+      <div class="meta-block"><div class="label">RECORD</div><div class="value"><a id="recordLink" target="_blank" rel="noopener">OPEN CERN RECORD ↗</a></div></div>
+      <div class="meta-block">
+        <div class="label">YOUR NOTE</div>
+        <textarea id="note" class="note" placeholder="optional"></textarea>
+      </div>
+      <div class="controls">
+        <button id="prevBtn">← PREVIOUS</button><button id="nextBtn">NEXT →</button>
+        <button id="saveBtn" class="wide">S — SAVE IMAGE</button>
+        <button id="openImageBtn" class="wide">OPEN IMAGE ↗</button>
+      </div>
+      <div style="margin-top:12px;color:var(--muted);line-height:1.55">KEYS<br>← / → browse<br>SPACE next<br>S save / unsave<br>I info<br>O open record</div>
+    </aside>
+  </main>
+
+<script>
+// Small real CERN PhotoLab test sequence. The production version would replace
+// this with a generated catalogue file containing many thousands of records.
+const ITEMS = [
+  {id:'CERN-PHOTO-6803018', date:'Mar 1968', title:'Motor-generator set of the PS main supply', record:'https://cds.cern.ch/record/763857'},
+  {id:'CERN-PHOTO-6805032', date:'May 1968', title:'Layout of the CERN Computing Centre', record:'https://cds.cern.ch/record/763914'},
+  {id:'CERN-PHOTO-6805032_a', date:'May 1968', title:'Layout of the CERN Computing Centre', record:'https://cds.cern.ch/record/763914'},
+  {id:'CERN-PHOTO-6805032_b', date:'May 1968', title:'Layout of the CERN Computing Centre', record:'https://cds.cern.ch/record/763914'},
+  {id:'CERN-PHOTO-6805032_c', date:'May 1968', title:'Layout of the CERN Computing Centre', record:'https://cds.cern.ch/record/763914'},
+  {id:'CERN-PHOTO-6807350', date:'Jul 1968', title:'Prof. Julian Schwinger lecturing at CERN', record:'https://cds.cern.ch/record/763996'},
+  {id:'CERN-PHOTO-6807351_a', date:'Jul 1968', title:'Prof. Julian Schwinger lecturing at CERN', record:'https://cds.cern.ch/record/763996'},
+  {id:'CERN-PHOTO-6811234', date:'1968', title:'Multiwire proportional chamber (MWPC)', record:'https://cds.cern.ch/record/764087'},
+  {id:'CERN-PHOTO-6811235', date:'1968', title:'Multiwire proportional chamber (MWPC)', record:'https://cds.cern.ch/record/764087'},
+  {id:'CERN-PHOTO-6901276', date:'1969', title:'Spiral Readers (LSD) machine for bubble-chamber film', record:'https://cds.cern.ch/record/764141'},
+  {id:'CERN-PHOTO-6901277', date:'1969', title:'Spiral Readers (LSD) machine for bubble-chamber film', record:'https://cds.cern.ch/record/764141'}
+].map(x => ({...x, image:`https://cds.cern.ch/images/${x.id}/file?size=large`, imagePage:`https://cds.cern.ch/images/${x.id}`}));
+
+const KEY='cern-human-archive-test-v1';
+let state={index:0,saved:{},notes:{},info:true};
+try{ state={...state,...JSON.parse(localStorage.getItem(KEY)||'{}')}; }catch(e){}
+state.index=Math.max(0,Math.min(ITEMS.length-1,state.index||0));
+
+const $=id=>document.getElementById(id);
+const photo=$('photo'), fallback=$('fallback'), infoPanel=$('infoPanel'), note=$('note');
+function persist(){ localStorage.setItem(KEY,JSON.stringify(state)); }
+function current(){ return ITEMS[state.index]; }
+function isSaved(){ return !!state.saved[current().id]; }
+function render(){
+  const x=current();
+  photo.style.display='block'; fallback.style.display='none';
+  photo.src=x.image;
+  $('hudDate').textContent=x.date;
+  $('hudId').textContent=x.id;
+  $('hudSaved').textContent=isSaved()?'• SAVED':'';
+  $('hudPosition').textContent=`${state.index+1} / ${ITEMS.length}`;
+  $('metaId').textContent=x.id; $('metaDate').textContent=x.date; $('metaTitle').textContent=x.title;
+  $('recordLink').href=x.record;
+  note.value=state.notes[x.id]||'';
+  $('saveBtn').textContent=isSaved()?'S — REMOVE SAVED':'S — SAVE IMAGE';
+  $('saveBtn').classList.toggle('saved',isSaved());
+  $('savedCount').textContent=`${Object.keys(state.saved).length} SAVED`;
+  infoPanel.classList.toggle('hidden',!state.info);
+  persist();
+  preload(1); preload(2);
+}
+photo.onerror=()=>{ photo.style.display='none'; fallback.style.display='block'; $('fallbackId').textContent=current().id; };
+function preload(n){ const x=ITEMS[(state.index+n)%ITEMS.length]; if(x){const im=new Image();im.src=x.image;} }
+function go(delta){ state.index=(state.index+delta+ITEMS.length)%ITEMS.length; render(); }
+function toggleSave(){
+  const x=current();
+  if(state.saved[x.id]) delete state.saved[x.id];
+  else state.saved[x.id]={id:x.id,date:x.date,title:x.title,record:x.record,image:x.image,imagePage:x.imagePage,note:state.notes[x.id]||'',savedAt:new Date().toISOString()};
+  $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
+  render();
+}
+function openRecord(){ window.open(current().record,'_blank','noopener'); }
+function openImage(){ window.open(current().imagePage,'_blank','noopener'); }
+function exportSaved(){
+  const selections=Object.values(state.saved).map(x=>({...x,note:state.notes[x.id]||x.note||''}));
+  const data={project:'CERN HUMAN ARCHIVE',exportedAt:new Date().toISOString(),count:selections.length,selections};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cern-human-archive-selections.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+note.addEventListener('input',()=>{ const id=current().id; state.notes[id]=note.value; if(state.saved[id]) state.saved[id].note=note.value; persist(); });
+['prevTop','prevBtn','prevMobile'].forEach(id=>$(id).onclick=()=>go(-1));
+['nextTop','nextBtn','nextMobile'].forEach(id=>$(id).onclick=()=>go(1));
+['saveTop','saveBtn','saveMobile'].forEach(id=>$(id).onclick=toggleSave);
+$('infoTop').onclick=()=>{state.info=!state.info;render();};
+$('exportTop').onclick=exportSaved;
+$('recordLink').onclick=()=>{};
+$('openImageBtn').onclick=openImage;
+document.addEventListener('keydown',e=>{
+  if(document.activeElement===note) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(1)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();go(-1)}
+  else if(e.key.toLowerCase()==='s'){e.preventDefault();toggleSave()}
+  else if(e.key.toLowerCase()==='i'){e.preventDefault();state.info=!state.info;render()}
+  else if(e.key.toLowerCase()==='o'){e.preventDefault();openRecord()}
+});
+render();
+</script>
+</body>
+</html>
