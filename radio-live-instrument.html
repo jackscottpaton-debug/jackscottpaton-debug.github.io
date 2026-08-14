@@ -20,13 +20,21 @@ button:hover{background:#f3f3f3} button.active,button:active{background:#111;col
 .section{border-bottom:1px solid #111}
 .sectionhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
 .controls{padding:12px 10px}
-.performance{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #111}
-.performance>.section{border-bottom:0}.performance>.section:first-child{border-right:1px solid #111}
+.performance{display:block;border-bottom:1px solid #111}
+.performance>.section{border-bottom:1px solid #111}.performance>.section:last-child{border-bottom:0}
 .bigcontrol{padding:13px 10px;border-bottom:1px solid var(--line)}
-.rangeRow{display:grid;grid-template-columns:115px 1fr 145px;align-items:center;gap:12px}
+.rangeRow{display:grid;grid-template-columns:115px minmax(0,1fr) 145px;align-items:center;gap:12px}
 .rangeRow label,.smalllabel{font-size:10px;text-transform:uppercase;color:#555}
 .rangeRow output{font-size:11px;text-align:right;white-space:nowrap}
-input[type=range]{width:100%;accent-color:#111}
+input[type=range]{width:100%;accent-color:#111;height:28px}
+.rangeControl{display:grid;grid-template-columns:31px minmax(0,1fr) 31px;align-items:center;gap:5px}
+.nudge{padding:4px 0;min-height:28px;font-size:15px;line-height:1}
+.presetbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
+.presetbar .caption{font-size:9px;color:#777;text-transform:uppercase;align-self:center;margin-right:3px}
+.miniControl{display:grid;grid-template-columns:24px minmax(0,1fr) 24px;gap:4px;align-items:center}
+.miniControl button{padding:2px 0;min-height:24px;font-size:12px}
+.laneRateMode{margin-left:auto}
+.note{font-size:9px;color:#777;line-height:1.35;margin-top:6px}
 .zeroLabels{display:grid;grid-template-columns:1fr auto 1fr;margin:5px 145px 0 127px;font-size:9px;color:#777;text-transform:uppercase}.zeroLabels span:last-child{text-align:right}.zeroLabels b{font-weight:400;color:#111}
 .lanes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line)}
 .lane{padding:10px;border-right:1px solid var(--line);min-height:166px}.lane:last-child{border-right:0}
@@ -42,7 +50,7 @@ input[type=range]{width:100%;accent-color:#111}
 .swarmGrid{display:grid;grid-template-columns:170px 1fr;gap:0}.swarmButtons{padding:10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px}.swarmButtons button{width:100%}.swarmControl{padding:12px 10px}.swarmStatus{margin-top:9px;font-size:10px;color:#777}
 .legend{padding:8px 10px 30px;font-size:9px;color:#777;line-height:1.5}
 .warning{padding:8px 10px;border-bottom:1px solid #111;font-size:10px;background:#fafafa}.warning strong{font-weight:600}
-@media(max-width:900px){.performance{grid-template-columns:1fr}.performance>.section:first-child{border-right:0;border-bottom:1px solid #111}.lanes{grid-template-columns:repeat(2,1fr)}.lane:nth-child(2){border-right:0}.lane:nth-child(-n+2){border-bottom:1px solid var(--line)}.rangeRow{grid-template-columns:90px 1fr 110px}.zeroLabels{margin-left:102px;margin-right:110px}}
+@media(max-width:900px){.lanes{grid-template-columns:repeat(2,1fr)}.lane:nth-child(2){border-right:0}.lane:nth-child(-n+2){border-bottom:1px solid var(--line)}.rangeRow{grid-template-columns:90px 1fr 110px}.zeroLabels{margin-left:102px;margin-right:110px}}
 @media(max-width:560px){.topbar .title{display:none}.statusbar{display:block}.statusbar span{display:block;margin-bottom:2px}.lanes{grid-template-columns:1fr}.lane{border-right:0;border-bottom:1px solid var(--line)}.rangeRow{grid-template-columns:1fr}.rangeRow output{text-align:left}.zeroLabels{margin:5px 0 0}.swarmGrid{grid-template-columns:1fr}.swarmButtons{border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap}.swarmButtons button{width:auto;flex:1}.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.row::before{grid-column:1/-1}.seat{width:100%}}
 </style>
 </head>
@@ -51,7 +59,7 @@ input[type=range]{width:100%;accent-color:#111}
   <button id="arm" disabled>ARM ENGINE</button>
   <button id="cut" disabled>CUT</button>
   <button id="stopEngine" disabled>STOP ENGINE</button>
-  <span class="title">LIVE RADIO INSTRUMENT · PERFORMANCE BUILD 01</span>
+  <span class="title">LIVE RADIO INSTRUMENT · PERFORMANCE BUILD 02</span>
 </div>
 <div class="statusbar">
   <span id="status">Loading the 60-station MAIN set…</span>
@@ -62,19 +70,23 @@ input[type=range]{width:100%;accent-color:#111}
 <div class="section">
   <div class="sectionhead"><span>MASTER TRANSITION</span><span id="xfadeText">ORCHESTRA</span></div>
   <div class="bigcontrol">
-    <div class="rangeRow"><label for="xfade">ORCHESTRA ↔ SCAN</label><input id="xfade" type="range" min="0" max="100" value="0" disabled><output id="xfadeOut">ORCHESTRA 100% · SCAN 0%</output></div>
+    <div class="rangeRow"><label for="xfade">ORCHESTRA ↔ SCAN</label><div class="rangeControl"><button class="nudge" id="xfadeDown" disabled>−</button><input id="xfade" type="range" min="0" max="100" step="0.1" value="0" disabled><button class="nudge" id="xfadeUp" disabled>+</button></div><output id="xfadeOut">ORCHESTRA 100% · SCAN 0%</output></div>
   </div>
+  <div class="presetbar"><span class="caption">INSTANT SWITCH</span><button id="snapOrch" disabled>ORCHESTRA NOW</button><button id="snapMid" disabled>50 / 50</button><button id="snapScan" disabled>SCAN NOW</button></div>
 </div>
 
 <div class="performance">
   <div class="section">
     <div class="sectionhead"><span>SCAN ENGINE</span><span id="scanTiming">500ms CHUNK</span></div>
     <div class="bigcontrol">
-      <div class="rangeRow"><label for="speed">SCAN / THROUGH ZERO</label><input id="speed" type="range" min="0" max="200" value="42" disabled><output id="speedOut">~500ms chunk</output></div>
+      <div class="rangeRow"><label for="speed">SCAN / THROUGH ZERO</label><div class="rangeControl"><button class="nudge" id="speedDown" disabled>−</button><input id="speed" type="range" min="0" max="200" step="0.1" value="42" disabled><button class="nudge" id="speedUp" disabled>+</button></div><output id="speedOut">~500ms chunk</output></div>
       <div class="zeroLabels"><span>5 SEC CHUNKS</span><b>0 · MAX DENSITY</b><span>SPACE / SILENCE</span></div>
+      <div class="note">Drag for large moves; use − / + for tiny changes. Keyboard arrow keys also make fine adjustments.</div>
     </div>
+    <div class="presetbar"><span class="caption">SCAN MOTION</span><button id="revUp" disabled>REV UP</button><button id="revThrough" disabled>REV THROUGH ZERO</button><button id="slowDown" disabled>SLOW DOWN</button><button id="motionStop" disabled>MOTION STOP</button></div>
+    <div class="presetbar"><span class="caption">SCAN RHYTHM</span><button id="rhythmStraight" class="active" disabled>STRAIGHT</button><button id="rhythmA" disabled>RHYTHM A</button><button id="rhythmB" disabled>RHYTHM B</button></div>
     <div class="bigcontrol">
-      <div class="rangeRow"><label for="scanMaster">SCAN MASTER</label><input id="scanMaster" type="range" min="0" max="100" value="78" disabled><output id="scanMasterOut">78%</output></div>
+      <div class="rangeRow"><label for="scanMaster">SCAN MASTER</label><div class="rangeControl"><button class="nudge" id="scanMasterDown" disabled>−</button><input id="scanMaster" type="range" min="0" max="100" step="0.1" value="78" disabled><button class="nudge" id="scanMasterUp" disabled>+</button></div><output id="scanMasterOut">78%</output></div>
     </div>
     <div class="lanes" id="lanes"></div>
     <div class="orchTools">
@@ -92,11 +104,12 @@ input[type=range]{width:100%;accent-color:#111}
         <button id="swarm" disabled>SWARM ON</button>
         <button id="burst" disabled>BURST</button>
         <button id="popOne" disabled>POP ONE</button>
+        <button id="endLast" disabled>END LAST</button>
         <button id="resetSwarm" disabled>RESET</button>
       </div>
       <div class="swarmControl">
         <div class="rangeRow"><label for="swarmLevel">SWARM LEVEL</label><input id="swarmLevel" type="range" min="0" max="100" value="0" disabled><output id="swarmLevelOut">0%</output></div>
-        <div class="swarmStatus" id="swarmStatus">The MAIN radio set can be faded up underneath the scanners, then BURST removes stations one by one until the final station disappears.</div>
+        <div class="swarmStatus" id="swarmStatus">The MAIN radio set can be faded up underneath the scanners. BURST removes stations one by one but deliberately leaves the final station playing until you press END LAST.</div>
       </div>
     </div>
   </div>
@@ -105,12 +118,12 @@ input[type=range]{width:100%;accent-color:#111}
 <div class="section">
   <div class="sectionhead"><span>ORCHESTRA</span><span id="orchCount">0 AUDIBLE</span></div>
   <div class="bigcontrol">
-    <div class="rangeRow"><label for="orchMaster">ORCHESTRA MASTER</label><input id="orchMaster" type="range" min="0" max="100" value="82" disabled><output id="orchMasterOut">82%</output></div>
+    <div class="rangeRow"><label for="orchMaster">ORCHESTRA MASTER</label><div class="rangeControl"><button class="nudge" id="orchMasterDown" disabled>−</button><input id="orchMaster" type="range" min="0" max="100" step="0.1" value="82" disabled><button class="nudge" id="orchMasterUp" disabled>+</button></div><output id="orchMasterOut">82%</output></div>
   </div>
   <div class="orchTools">
     <button id="orchAllOn" disabled>ALL AVAILABLE ON</button>
     <button id="orchAllOff" disabled>ALL OFF</button>
-    <button id="countMix" class="active" disabled>COUNT MIX: ON</button>
+    <button id="countMix" class="active" title="Automatically reduces each orchestra chair a little as more chairs are switched on, creating headroom and avoiding a huge loudness jump." disabled>AUTO HEADROOM: ON</button>
   </div>
   <main class="orchestra" id="orchestra">
     <div class="row back" data-row="back" data-label="Keyboards / percussion"></div>
@@ -121,7 +134,7 @@ input[type=range]{width:100%;accent-color:#111}
     <div class="row voice" data-row="voice" data-label="Unfixed / electronic / voice"></div>
   </main>
 </div>
-<div class="legend">MAIN = the existing 60-station worldwide scanner logic. MELODY, RHYTHM and VOICE / CHOIR are separate pre-running scan banks built from the orchestra sources. LOCK means a lane changes on the shared master pulse. FREE means it runs independently; DRIFT changes its rate so it can pull away from the others. CUT silences the public mix without stopping any streams or scan clocks.</div>
+<div class="legend">MAIN = the existing 60-station worldwide scanner logic. MELODY, RHYTHM and VOICE / CHOIR are separate pre-running banks. RATE: MASTER follows the large scan slider; RATE: OWN gives that lane a completely independent through-zero rate. LOCK phase-locks MASTER-rate lanes; FREE lets them run on their own clocks. AUTO HEADROOM only compensates for the number of orchestra chairs turned on — it is not automatic station loudness matching. CUT silences the public mix without stopping streams or scan clocks.</div>
 
 <script>
 const API=["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
@@ -190,6 +203,36 @@ const BANK_IDS={
   voice:["voice","spoken"]
 };
 
+// These are resolved through Radio Browser at page-load time, before ARM.
+// If one is unavailable it is simply omitted from the playable bank.
+const EXTRA_BANK_SEARCHES={
+  rhythm:[
+    {label:"DNBRADIO",queries:["DNBRADIO","DNB Radio"]},
+    {label:"Bassdrive",queries:["Bassdrive"]},
+    {label:"Different Drumz",queries:["Different Drumz"]},
+    {label:"Drum and Bass UK",queries:["Drum and Bass UK Radio","DnBUK Radio"]},
+    {label:"Rainwave Chiptunes",queries:["Rainwave Chiptunes"]},
+    {label:"ericade.radio",queries:["ericade.radio","Ericade Radio"]},
+    {label:"Radio Seribatu",queries:["Radio Seribatu","Seribatu FM"]},
+    {label:"Gamelan Radio",queries:["GAMELAN","Gamelan Radio"]},
+    {label:"Drums.ro",queries:["Drums.ro Radio","Drums.ro"]}
+  ],
+  voice:[
+    {label:"YourClassical Choral",queries:["YourClassical Choral","Your Classical Choral"]},
+    {label:"Radio Caprice Choral / Vocal",queries:["Radio Caprice Classical Choral Vocal Music","CLASSICAL CHORAL VOCAL MUSIC Radio Caprice"]},
+    {label:"Radio Caprice Mass / Chorus / Cantata",queries:["Radio Caprice Mass Chorus Cantata"]},
+    {label:"Radio Caprice Opera",queries:["Radio Caprice Opera"]},
+    {label:"Gregorian Chant",queries:["Gregorian Chant","HearMe.fm Gregorian Chant"]},
+    {label:"Calm Gregorian Chant",queries:["CALM RADIO Gregorian Chant","Calm Radio Gregorian Chant"]},
+    {label:"AudioBookRadio",queries:["AudioBookRadio","Audio Book Radio"]},
+    {label:"Radio Art International Poetry",queries:["Radio Art International Poetry"]},
+    {label:"Radio Art Greek Poetry",queries:["Radio Art Greek Poetry"]},
+    {label:"Radio Art Contemporary Vocal",queries:["Radio Art Contemporary Vocal"]},
+    {label:"Radio Art Vocal Legends",queries:["Radio Art Vocal Legends"]},
+    {label:"Radio Art Today's Sopranos",queries:["Radio Art Today's Sopranos","Radio Art Todays Sopranos"]}
+  ]
+};
+
 const $=id=>document.getElementById(id);
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const clean=s=>String(s||"").replace(/\s+/g," ").trim();
@@ -197,18 +240,24 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 const app={
-  mainLoaded:false, armed:false, arming:false, cut:false,
+  mainLoaded:false, specialLoaded:false, armed:false, arming:false, cut:false,
   xfade:0, orchMaster:.82, scanMaster:.78, swarmLevel:0,
   speedPos:42, countMix:true, swarmOn:false, bursting:false,
   lockedTimer:null, lockedMuteTimer:null, mainStations:[],
-  orchestra:[], banks:{melody:[],rhythm:[],voice:[]}, swarmActive:new Set()
+  orchestra:[], banks:{melody:[],rhythm:[],voice:[]}, swarmActive:new Set(),
+  motionToken:0, motionRAF:null, motionName:"", rhythmPattern:null, rhythmIndex:0
 };
 
 const lanes={
-  main:{key:"main",label:"MAIN",enabled:false,locked:true,rate:1,volume:1,index:-1,active:null,pulse:false,timer:null,muteTimer:null},
-  melody:{key:"melody",label:"MELODY",enabled:false,locked:true,rate:1,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null},
-  rhythm:{key:"rhythm",label:"RHYTHM",enabled:false,locked:true,rate:1,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null},
-  voice:{key:"voice",label:"VOICE / CHOIR",enabled:false,locked:false,rate:.96,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null}
+  main:{key:"main",label:"MAIN",enabled:false,locked:true,followMaster:true,ownPos:42,volume:1,index:-1,active:null,pulse:false,timer:null,muteTimer:null,patternIndex:0},
+  melody:{key:"melody",label:"MELODY",enabled:false,locked:true,followMaster:true,ownPos:42,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null,patternIndex:0},
+  rhythm:{key:"rhythm",label:"RHYTHM",enabled:false,locked:true,followMaster:true,ownPos:42,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null,patternIndex:0},
+  voice:{key:"voice",label:"VOICE / CHOIR",enabled:false,locked:false,followMaster:true,ownPos:44,volume:.9,index:-1,active:null,pulse:false,timer:null,muteTimer:null,patternIndex:0}
+};
+
+const RHYTHM_PATTERNS={
+  A:[1,1,2,1,1,2],
+  B:[1,.5,.5,1.5,.5,2,.5]
 };
 
 function shuffle(a){for(let i=a.length-1;i;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -254,31 +303,73 @@ function buildLanes(){
     d.innerHTML=`
       <div class="laneTitle"><span>${esc(lane.label)}</span><span id="laneCount-${lane.key}" style="font-size:9px;color:#777">0 READY</span></div>
       <div class="laneNow" id="laneNow-${lane.key}">—</div>
-      <div class="laneMeta" id="laneMeta-${lane.key}">${lane.key==="main"?"60-station general radio set":lane.key==="melody"?"melodic / instrumental sources":lane.key==="rhythm"?"drums · chiptune · percussion":"a cappella / spoken voice"}</div>
-      <div class="laneButtons"><button id="laneOn-${lane.key}" disabled>ON</button><button id="laneLock-${lane.key}" class="${lane.locked?"active":""}" disabled>${lane.locked?"LOCKED":"FREE"}</button></div>
-      <div class="miniRange"><label><span>DRIFT</span><span id="rateOut-${lane.key}">${lane.rate.toFixed(2)}×</span></label><input id="rate-${lane.key}" type="range" min="70" max="130" value="${Math.round(lane.rate*100)}" disabled></div>
-      <div class="miniRange"><label><span>LEVEL</span><span id="laneVolOut-${lane.key}">${Math.round(lane.volume*100)}%</span></label><input id="laneVol-${lane.key}" type="range" min="0" max="100" value="${Math.round(lane.volume*100)}" disabled></div>`;
+      <div class="laneMeta" id="laneMeta-${lane.key}">${lane.key==="main"?"60-station general radio set":lane.key==="melody"?"melodic / instrumental sources":lane.key==="rhythm"?"drums · chiptune · percussion · rhythmic radio":"a cappella · choir · chant · opera · spoken voice"}</div>
+      <div class="laneButtons"><button id="laneOn-${lane.key}" disabled>ON</button><button id="laneLock-${lane.key}" class="${lane.locked?"active":""}" disabled>${lane.locked?"LOCKED":"FREE"}</button><button id="laneRateMode-${lane.key}" disabled>RATE: MASTER</button></div>
+      <div class="miniRange"><label><span>OWN RATE</span><span id="rateOut-${lane.key}">MASTER</span></label><div class="miniControl"><button id="rateDown-${lane.key}" disabled>−</button><input id="rate-${lane.key}" type="range" min="0" max="200" step="0.1" value="${lane.ownPos}" disabled><button id="rateUp-${lane.key}" disabled>+</button></div></div>
+      <div class="miniRange"><label><span>LEVEL</span><span id="laneVolOut-${lane.key}">${Math.round(lane.volume*100)}%</span></label><input id="laneVol-${lane.key}" type="range" min="0" max="100" step="0.1" value="${Math.round(lane.volume*100)}" disabled></div>`;
     host.appendChild(d);
     $(`laneOn-${lane.key}`).onclick=()=>toggleLane(lane.key);
-    $(`laneLock-${lane.key}`).onclick=()=>{lane.locked=!lane.locked;$(`laneLock-${lane.key}`).textContent=lane.locked?"LOCKED":"FREE";$(`laneLock-${lane.key}`).classList.toggle("active",lane.locked);restartSchedulers(true)};
-    $(`rate-${lane.key}`).oninput=e=>{lane.rate=Number(e.target.value)/100;$(`rateOut-${lane.key}`).textContent=lane.rate.toFixed(2)+"×";if(!lane.locked&&lane.enabled)restartSchedulers(true)};
+    $(`laneLock-${lane.key}`).onclick=()=>{if(!lane.followMaster)return;lane.locked=!lane.locked;restartSchedulers(true);updateLaneUI()};
+    $(`laneRateMode-${lane.key}`).onclick=()=>{lane.followMaster=!lane.followMaster;if(!lane.followMaster){lane.locked=false;lane.ownPos=app.speedPos;$(`rate-${lane.key}`).value=lane.ownPos}restartSchedulers(true);updateLaneUI()};
+    $(`rate-${lane.key}`).oninput=e=>{lane.ownPos=Number(e.target.value);if(!lane.followMaster&&lane.enabled)restartSchedulers(true);updateLaneUI()};
+    $(`rateDown-${lane.key}`).onclick=()=>nudgeLaneRate(lane,-.5);
+    $(`rateUp-${lane.key}`).onclick=()=>nudgeLaneRate(lane,.5);
     $(`laneVol-${lane.key}`).oninput=e=>{lane.volume=Number(e.target.value)/100;$(`laneVolOut-${lane.key}`).textContent=Math.round(lane.volume*100)+"%";updateAudioLevels()};
   }
 }
+
+function nudgeLaneRate(lane,delta){if(lane.followMaster)return;lane.ownPos=clamp(lane.ownPos+delta,0,200);$(`rate-${lane.key}`).value=lane.ownPos;if(lane.enabled)restartSchedulers(true);updateLaneUI()}
 
 async function loadMainSet(){
   let data;
   for(const base of API){
     try{const r=await fetch(base+"/json/stations/search?hidebroken=true&order=votes&reverse=true&limit=650");if(r.ok){data=await r.json();if(data.length)break}}catch(e){}
   }
-  if(!data){$("status").textContent="MAIN directory unavailable — orchestra / specialist banks can still arm.";app.mainLoaded=true;$("arm").disabled=false;return}
+  if(!data){$("status").textContent="MAIN directory unavailable — orchestra / specialist banks can still arm.";app.mainLoaded=true;maybeReadyToArm();return}
   const viable=data.filter(s=>{const u=s.url_resolved||s.url||"",c=(s.codec||"").toUpperCase();return u.startsWith("https://")&&Number(s.lastcheckok)===1&&Number(s.hls)!==1&&["MP3","AAC"].some(x=>c.includes(x))});
   const countries=new Map();for(const s of viable){const k=s.countrycode||s.country||"?";if(!countries.has(k))countries.set(k,s)}
   let chosen=[...countries.values()];const used=new Set(chosen.map(s=>s.stationuuid));for(const s of viable){if(chosen.length>=MAIN_TARGET)break;if(!used.has(s.stationuuid)){chosen.push(s);used.add(s.stationuuid)}}
   chosen=shuffle(chosen).slice(0,MAIN_TARGET);
   app.mainStations=chosen.map(s=>audioObject(s.url_resolved||s.url,{kind:"main",sourceId:s.stationuuid,name:clean(s.name),station:clean(s.name),country:clean(s.country),language:clean(s.language)}));
   app.swarmActive=new Set(app.mainStations.map((_,i)=>i));
-  app.mainLoaded=true;$("arm").disabled=false;$("status").textContent=`${app.mainStations.length} MAIN stations selected · ready to ARM.`;updateEngineCount();updateSwarmUI();
+  app.mainLoaded=true;updateEngineCount();updateSwarmUI();maybeReadyToArm();
+}
+
+function rbScore(x,queries){
+  const n=clean(x.name).toLowerCase();let score=0;
+  for(const q0 of queries){const q=q0.toLowerCase();if(n===q)score+=150;if(n.includes(q)||q.includes(n))score+=65}
+  if((x.url_resolved||x.url||"").startsWith("https://"))score+=35;
+  if(Number(x.lastcheckok)===1)score+=25;if(Number(x.hls)!==1)score+=8;score+=Math.min(20,Math.log10(1+Number(x.votes||0))*5);
+  return score;
+}
+async function resolveBankSearch(spec){
+  let found=[];
+  for(const base of API){
+    for(const q of spec.queries){
+      try{const r=await fetch(base+"/json/stations/search?name="+encodeURIComponent(q)+"&hidebroken=true&limit=25");if(!r.ok)continue;const data=await r.json();found.push(...data)}catch(e){}
+    }
+    if(found.length)break;
+  }
+  const viable=found.filter(x=>{const u=x.url_resolved||x.url||"",c=(x.codec||"").toUpperCase();return u.startsWith("https://")&&Number(x.lastcheckok)===1&&Number(x.hls)!==1&&["MP3","AAC"].some(z=>c.includes(z))});
+  viable.sort((a,b)=>rbScore(b,spec.queries)-rbScore(a,spec.queries));
+  return viable[0]||null;
+}
+async function loadExtraBanks(){
+  $("status").textContent="Resolving extra VOICE / CHOIR and RHYTHM stations…";
+  const seen={rhythm:new Set(app.banks.rhythm.map(x=>x.url)),voice:new Set(app.banks.voice.map(x=>x.url))};
+  for(const bank of ["voice","rhythm"]){
+    const jobs=EXTRA_BANK_SEARCHES[bank].map(async spec=>{
+      const x=await resolveBankSearch(spec);if(!x)return null;const url=x.url_resolved||x.url;if(seen[bank].has(url))return null;seen[bank].add(url);
+      return audioObject(url,{kind:"scan",bank,sourceId:x.stationuuid||spec.label,name:spec.label,station:clean(x.name)||spec.label,country:clean(x.country),language:clean(x.language)});
+    });
+    const added=(await Promise.all(jobs)).filter(Boolean);app.banks[bank].push(...added);shuffle(app.banks[bank]);
+  }
+  app.specialLoaded=true;updateEngineCount();maybeReadyToArm();
+}
+function maybeReadyToArm(){
+  if(!app.mainLoaded||!app.specialLoaded)return;
+  $("arm").disabled=false;
+  $("status").textContent=`Ready to ARM · MAIN ${app.mainStations.length} · RHYTHM ${app.banks.rhythm.length} · VOICE / CHOIR ${app.banks.voice.length}.`;
 }
 
 function allRuntimes(){
@@ -307,13 +398,17 @@ function stopEngine(){
 function poolFor(lane){return lane.key==="main"?app.mainStations:app.banks[lane.key]||[]}
 function livePool(lane){return poolFor(lane).filter(x=>x.alive)}
 
-function timing(rate=1){
-  const p=app.speedPos;let chunk,gap;
+function timingFromPos(p){
+  let chunk,gap;
   if(p<=100){const t=p/100;chunk=5000*Math.pow(20/5000,t);gap=0}else{chunk=20;const t=(p-100)/100;gap=20*Math.pow(5000/20,t)}
-  return {chunk:Math.max(16,chunk/rate),gap:Math.max(0,gap/rate)};
+  return {chunk:Math.max(16,chunk),gap:Math.max(0,gap)};
 }
-function timingLabel(){const {chunk,gap}=timing(1);if(gap>0)return `${formatMs(chunk)} fragment · ${formatMs(gap)} gap`;return `${formatMs(chunk)} chunk`}
-function formatMs(ms){return ms>=1000?(ms/1000).toFixed(ms>=3000?1:2).replace(/\.00$/,"").replace(/\.0$/,"")+"s":Math.round(ms)+"ms"}
+function timingLabelForPos(p){const {chunk,gap}=timingFromPos(p);if(gap>0)return `${formatMs(chunk)} fragment · ${formatMs(gap)} gap`;return `${formatMs(chunk)} chunk`}
+function timingLabel(){return timingLabelForPos(app.speedPos)}
+function formatMs(ms){return ms>=1000?(ms/1000).toFixed(ms>=3000?1:2).replace(/\.00$/,'').replace(/\.0$/,'')+'s':Math.round(ms)+'ms'}
+function scaleTiming(t,f){return {chunk:Math.max(16,t.chunk*f),gap:Math.max(0,t.gap*f)}}
+function patternFactorForLocked(){if(!app.rhythmPattern)return 1;const a=RHYTHM_PATTERNS[app.rhythmPattern],f=a[app.rhythmIndex%a.length];app.rhythmIndex++;return f}
+function patternFactorForLane(lane){if(!app.rhythmPattern||!lane.followMaster)return 1;const a=RHYTHM_PATTERNS[app.rhythmPattern],f=a[lane.patternIndex%a.length];lane.patternIndex++;return f}
 
 function setLanePulse(lane,on){lane.pulse=on;updateAudioLevels()}
 function activateNext(lane){
@@ -325,25 +420,25 @@ function clearLaneTimers(lane){if(lane.timer)clearTimeout(lane.timer);if(lane.mu
 function clearSchedulers(){if(app.lockedTimer)clearTimeout(app.lockedTimer);if(app.lockedMuteTimer)clearTimeout(app.lockedMuteTimer);app.lockedTimer=app.lockedMuteTimer=null;for(const l of Object.values(lanes))clearLaneTimers(l)}
 
 function lockedCycle(){
-  const group=Object.values(lanes).filter(l=>l.enabled&&l.locked);if(!group.length)return;
-  const t=timing(1);group.forEach(activateNext);
+  const group=Object.values(lanes).filter(l=>l.enabled&&l.locked&&l.followMaster);if(!group.length)return;
+  const t=scaleTiming(timingFromPos(app.speedPos),patternFactorForLocked());group.forEach(activateNext);
   if(t.gap>0)app.lockedMuteTimer=setTimeout(()=>group.forEach(l=>setLanePulse(l,false)),t.chunk);
   app.lockedTimer=setTimeout(lockedCycle,t.chunk+t.gap);
 }
 function freeCycle(lane){
-  if(!lane.enabled||lane.locked)return;const t=timing(lane.rate);activateNext(lane);
+  if(!lane.enabled||lane.locked)return;const pos=lane.followMaster?app.speedPos:lane.ownPos;const t=scaleTiming(timingFromPos(pos),patternFactorForLane(lane));activateNext(lane);
   if(t.gap>0)lane.muteTimer=setTimeout(()=>setLanePulse(lane,false),t.chunk);
   lane.timer=setTimeout(()=>freeCycle(lane),t.chunk+t.gap);
 }
 function restartSchedulers(preserve=true){
   clearSchedulers();if(!app.armed)return;
-  if(!preserve){for(const l of Object.values(lanes)){l.active=null;l.pulse=false}}
-  if(Object.values(lanes).some(l=>l.enabled&&l.locked))lockedCycle();for(const l of Object.values(lanes))if(l.enabled&&!l.locked)freeCycle(l);updateAudioLevels();updateLaneUI();
+  if(!preserve){app.rhythmIndex=0;for(const l of Object.values(lanes)){l.active=null;l.pulse=false;l.patternIndex=0}}
+  if(Object.values(lanes).some(l=>l.enabled&&l.locked&&l.followMaster))lockedCycle();for(const l of Object.values(lanes))if(l.enabled&&!l.locked)freeCycle(l);updateAudioLevels();updateLaneUI();
 }
 
 function toggleLane(key){const lane=lanes[key];lane.enabled=!lane.enabled;if(!lane.enabled){clearLaneTimers(lane);lane.pulse=false;lane.active=null}restartSchedulers(true);updateLaneUI()}
 function allScansOff(){for(const l of Object.values(lanes)){l.enabled=false;l.active=null;l.pulse=false}restartSchedulers(true);updateLaneUI()}
-function lockAll(v=true){for(const l of Object.values(lanes)){l.locked=v;$(`laneLock-${l.key}`).textContent=v?"LOCKED":"FREE";$(`laneLock-${l.key}`).classList.toggle("active",v)}restartSchedulers(true);updateLaneUI()}
+function lockAll(v=true){for(const l of Object.values(lanes)){if(v&&!l.followMaster)continue;l.locked=v}restartSchedulers(true);updateLaneUI()}
 
 function toggleOrchestra(o){if(!o.playable||!app.armed)return;o.active=!o.active;updateOrchUI();updateAudioLevels()}
 function orchestraAll(v){for(const o of app.orchestra)if(o.playable&&o.alive)o.active=v;updateOrchUI();updateAudioLevels()}
@@ -365,8 +460,13 @@ function updateLaneUI(){
     const on=$(`laneOn-${lane.key}`);if(on){on.textContent=lane.enabled?"OFF":"ON";on.classList.toggle("active",lane.enabled)}
     const n=$(`laneNow-${lane.key}`);if(n)n.textContent=lane.active?(lane.active.name||lane.active.station||"LIVE"):"—";
     const m=$(`laneMeta-${lane.key}`);if(m&&lane.active)m.textContent=[lane.active.station,lane.active.country,lane.active.language].filter(Boolean).join(" · ");
+    const lock=$(`laneLock-${lane.key}`);if(lock){lock.textContent=lane.locked?"LOCKED":"FREE";lock.classList.toggle("active",lane.locked);lock.disabled=!app.armed||!lane.followMaster}
+    const rm=$(`laneRateMode-${lane.key}`);if(rm){rm.textContent=lane.followMaster?"RATE: MASTER":"RATE: OWN";rm.classList.toggle("active",!lane.followMaster);rm.disabled=!app.armed}
+    const ri=$(`rate-${lane.key}`),rd=$(`rateDown-${lane.key}`),ru=$(`rateUp-${lane.key}`);if(ri)ri.disabled=!app.armed||lane.followMaster;if(rd)rd.disabled=!app.armed||lane.followMaster;if(ru)ru.disabled=!app.armed||lane.followMaster;
+    const ro=$(`rateOut-${lane.key}`);if(ro)ro.textContent=lane.followMaster?"MASTER":timingLabelForPos(lane.ownPos);
   }
 }
+
 function updateLaneCounts(){for(const lane of Object.values(lanes)){const el=$(`laneCount-${lane.key}`);if(el)el.textContent=`${livePool(lane).length} READY`}}
 function updateOrchUI(){
   let n=0;for(const o of app.orchestra){if(o.runtime)o.alive=o.runtime.alive;const b=$(`seat-${o.id}`);if(!b)continue;b.classList.toggle("on",!!o.active);const st=$(`state-${o.id}`);if(o.playable){if(o.alive){st.textContent=o.active?"ON":"LIVE · MUTED";if(o.active)n++}else st.textContent=app.armed?"STREAM ERROR":"READY"}}
@@ -377,37 +477,57 @@ function updateEngineCount(){
   $("engineCount").textContent=`MAIN ${main}/${app.mainStations.length} · ORCHESTRA ${orch}/27 · SCAN BANKS ${banks}/${Object.values(app.banks).flat().length}`;updateLaneCounts();updateOrchUI();updateSwarmUI();
 }
 
-function updateSwarmUI(){const remain=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive).length;$("swarmCount").textContent=`${remain} REMAINING`;$("swarm").textContent=app.swarmOn?"SWARM OFF":"SWARM ON";$("swarm").classList.toggle("active",app.swarmOn)}
+function updateSwarmUI(){
+  const candidates=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive),remain=candidates.length;$("swarmCount").textContent=`${remain} REMAINING`;$("swarm").textContent=app.swarmOn?"SWARM OFF":"SWARM ON";$("swarm").classList.toggle("active",app.swarmOn);
+  const last=remain===1?app.mainStations[candidates[0]]:null;$("endLast").disabled=!app.armed||remain!==1;
+  if(last)$("swarmStatus").textContent=`FINAL SURVIVOR: ${last.name||last.station||"LIVE RADIO"} — it will remain live until you press END LAST.`;
+}
 function toggleSwarm(){app.swarmOn=!app.swarmOn;updateSwarmUI();updateAudioLevels()}
-function resetSwarm(){app.swarmActive=new Set(app.mainStations.map((_,i)=>i));app.bursting=false;updateSwarmUI();updateAudioLevels()}
-function popOne(){
-  const candidates=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive);if(!candidates.length)return null;const idx=candidates[Math.floor(Math.random()*candidates.length)];app.swarmActive.delete(idx);updateSwarmUI();updateAudioLevels();return idx;
+function resetSwarm(){app.swarmActive=new Set(app.mainStations.map((_,i)=>i));app.bursting=false;$("swarmStatus").textContent="Swarm reset. BURST will now thin the wall down to one surviving live station.";updateSwarmUI();updateAudioLevels()}
+function popOne(allowLast=true){
+  const candidates=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive);if(!candidates.length||(!allowLast&&candidates.length<=1))return null;const idx=candidates[Math.floor(Math.random()*candidates.length)];app.swarmActive.delete(idx);updateSwarmUI();updateAudioLevels();return idx;
 }
 async function burst(){
   if(app.bursting)return;if(!app.swarmOn)app.swarmOn=true;app.bursting=true;updateSwarmUI();
-  let initial=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive).length;
-  while(app.bursting){const remaining=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive).length;if(!remaining)break;if(remaining===1){await wait(900);popOne();break}popOne();const progress=1-remaining/Math.max(1,initial);const delay=35+Math.random()*75+Math.pow(progress,3)*260;await wait(delay)}
-  app.bursting=false;updateSwarmUI();
+  const initial=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive).length;
+  while(app.bursting){const remaining=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive).length;if(remaining<=1)break;popOne(false);const progress=1-remaining/Math.max(1,initial);const delay=35+Math.random()*75+Math.pow(progress,3)*300;await wait(delay)}
+  app.bursting=false;updateSwarmUI();updateAudioLevels();
 }
+function endLast(){const candidates=[...app.swarmActive].filter(i=>app.mainStations[i]?.alive);if(candidates.length===1){popOne(true);$("swarmStatus").textContent="Final station ended."}}
 
 function setCut(v){app.cut=v;$("cut").textContent=v?"RESTORE":"CUT";$("cut").classList.toggle("active",v);updateAudioLevels()}
 
-function enableAfterArmOnly(){for(const id of ["xfade","speed","scanMaster","swarmLevel","orchMaster","lockAll","freeAll","syncNow","scanAllOff","swarm","burst","popOne","resetSwarm","orchAllOn","orchAllOff","countMix"]){if($(id))$(id).disabled=!app.armed}for(const lane of Object.values(lanes)){for(const id of [`laneOn-${lane.key}`,`laneLock-${lane.key}`,`rate-${lane.key}`,`laneVol-${lane.key}`])if($(id))$(id).disabled=!app.armed}}
+function enableAfterArmOnly(){
+  for(const id of ["xfade","xfadeDown","xfadeUp","snapOrch","snapMid","snapScan","speed","speedDown","speedUp","revUp","revThrough","slowDown","motionStop","rhythmStraight","rhythmA","rhythmB","scanMaster","scanMasterDown","scanMasterUp","swarmLevel","orchMaster","orchMasterDown","orchMasterUp","lockAll","freeAll","syncNow","scanAllOff","swarm","burst","popOne","resetSwarm","orchAllOn","orchAllOff","countMix"]){if($(id))$(id).disabled=!app.armed}
+  for(const lane of Object.values(lanes)){for(const id of [`laneOn-${lane.key}`,`laneRateMode-${lane.key}`,`laneVol-${lane.key}`])if($(id))$(id).disabled=!app.armed}
+  updateLaneUI();updateSwarmUI();
+}
 
+function setXfadeValue(v){app.xfade=clamp(v,0,1);$("xfade").value=app.xfade*100;const o=Math.round((1-app.xfade)*100),sc=Math.round(app.xfade*100);$("xfadeOut").textContent=`ORCHESTRA ${o}% · SCAN ${sc}%`;$("xfadeText").textContent=app.xfade<.33?"ORCHESTRA":app.xfade>.67?"SCAN":"CROSSFADE";updateAudioLevels()}
+function setMasterSpeedPos(v,restart=false){app.speedPos=clamp(v,0,200);$("speed").value=app.speedPos;const t=timingLabel();$("speedOut").textContent=t;$("scanTiming").textContent=t.toUpperCase();if(restart)restartSchedulers(true)}
+function setMasterLevel(which,v){app[which]=clamp(v,0,1);const id=which==="scanMaster"?"scanMaster":which==="orchMaster"?"orchMaster":"swarmLevel";$(id).value=app[which]*100;$(id+"Out").textContent=Math.round(app[which]*100)+"%";updateAudioLevels()}
+function stopMotion(clearButtons=true){app.motionToken++;if(app.motionRAF)cancelAnimationFrame(app.motionRAF);app.motionRAF=null;app.motionName="";if(clearButtons)for(const id of ["revUp","revThrough","slowDown"])$(id)?.classList.remove("active")}
+function startRamp(id,target,duration){stopMotion();const token=app.motionToken,startPos=app.speedPos,start=performance.now();app.motionName=id;$(id).classList.add("active");restartSchedulers(true);const tick=now=>{if(token!==app.motionToken)return;const t=clamp((now-start)/duration,0,1),ease=t*t*(3-2*t);setMasterSpeedPos(startPos+(target-startPos)*ease,false);if(t<1)app.motionRAF=requestAnimationFrame(tick);else{app.motionRAF=null;$(id).classList.remove("active");app.motionName=""}};app.motionRAF=requestAnimationFrame(tick)}
+function setRhythmPattern(name){app.rhythmPattern=name;app.rhythmIndex=0;for(const l of Object.values(lanes))l.patternIndex=0;$("rhythmStraight").classList.toggle("active",!name);$("rhythmA").classList.toggle("active",name==="A");$("rhythmB").classList.toggle("active",name==="B");restartSchedulers(true)}
 $("arm").onclick=async()=>{await armEngine();enableAfterArmOnly()};
-$("stopEngine").onclick=()=>{stopEngine();enableAfterArmOnly()};
+$("stopEngine").onclick=()=>{stopMotion();stopEngine();enableAfterArmOnly()};
 $("cut").onclick=()=>setCut(!app.cut);
-$("xfade").oninput=e=>{app.xfade=Number(e.target.value)/100;const o=Math.round((1-app.xfade)*100),s=Math.round(app.xfade*100);$("xfadeOut").textContent=`ORCHESTRA ${o}% · SCAN ${s}%`;$("xfadeText").textContent=app.xfade<.33?"ORCHESTRA":app.xfade>.67?"SCAN":"CROSSFADE";updateAudioLevels()};
-$("speed").oninput=e=>{app.speedPos=Number(e.target.value);const t=timingLabel();$("speedOut").textContent=t;$("scanTiming").textContent=t.toUpperCase();restartSchedulers(true)};
-$("scanMaster").oninput=e=>{app.scanMaster=Number(e.target.value)/100;$("scanMasterOut").textContent=Math.round(app.scanMaster*100)+"%";updateAudioLevels()};
-$("orchMaster").oninput=e=>{app.orchMaster=Number(e.target.value)/100;$("orchMasterOut").textContent=Math.round(app.orchMaster*100)+"%";updateAudioLevels()};
-$("swarmLevel").oninput=e=>{app.swarmLevel=Number(e.target.value)/100;$("swarmLevelOut").textContent=Math.round(app.swarmLevel*100)+"%";updateAudioLevels()};
+$("xfade").oninput=e=>setXfadeValue(Number(e.target.value)/100);
+$("xfadeDown").onclick=()=>setXfadeValue(app.xfade-.01);$("xfadeUp").onclick=()=>setXfadeValue(app.xfade+.01);
+$("snapOrch").onclick=()=>setXfadeValue(0);$("snapMid").onclick=()=>setXfadeValue(.5);$("snapScan").onclick=()=>setXfadeValue(1);
+$("speed").oninput=e=>{stopMotion();setMasterSpeedPos(Number(e.target.value),true)};
+$("speedDown").onclick=()=>{stopMotion();setMasterSpeedPos(app.speedPos-.5,true)};$("speedUp").onclick=()=>{stopMotion();setMasterSpeedPos(app.speedPos+.5,true)};
+$("revUp").onclick=()=>startRamp("revUp",100,8000);$("revThrough").onclick=()=>startRamp("revThrough",160,12000);$("slowDown").onclick=()=>startRamp("slowDown",0,8000);$("motionStop").onclick=()=>stopMotion();
+$("rhythmStraight").onclick=()=>setRhythmPattern(null);$("rhythmA").onclick=()=>setRhythmPattern("A");$("rhythmB").onclick=()=>setRhythmPattern("B");
+$("scanMaster").oninput=e=>setMasterLevel("scanMaster",Number(e.target.value)/100);$("scanMasterDown").onclick=()=>setMasterLevel("scanMaster",app.scanMaster-.01);$("scanMasterUp").onclick=()=>setMasterLevel("scanMaster",app.scanMaster+.01);
+$("orchMaster").oninput=e=>setMasterLevel("orchMaster",Number(e.target.value)/100);$("orchMasterDown").onclick=()=>setMasterLevel("orchMaster",app.orchMaster-.01);$("orchMasterUp").onclick=()=>setMasterLevel("orchMaster",app.orchMaster+.01);
+$("swarmLevel").oninput=e=>setMasterLevel("swarmLevel",Number(e.target.value)/100);
 $("lockAll").onclick=()=>lockAll(true);$("freeAll").onclick=()=>lockAll(false);$("syncNow").onclick=()=>restartSchedulers(false);$("scanAllOff").onclick=allScansOff;
-$("swarm").onclick=toggleSwarm;$("burst").onclick=burst;$("popOne").onclick=popOne;$("resetSwarm").onclick=resetSwarm;
-$("orchAllOn").onclick=()=>orchestraAll(true);$("orchAllOff").onclick=()=>orchestraAll(false);$("countMix").onclick=()=>{app.countMix=!app.countMix;$("countMix").textContent=`COUNT MIX: ${app.countMix?"ON":"OFF"}`;$("countMix").classList.toggle("active",app.countMix);updateAudioLevels()};
+$("swarm").onclick=toggleSwarm;$("burst").onclick=burst;$("popOne").onclick=()=>popOne(true);$("endLast").onclick=endLast;$("resetSwarm").onclick=resetSwarm;
+$("orchAllOn").onclick=()=>orchestraAll(true);$("orchAllOff").onclick=()=>orchestraAll(false);$("countMix").onclick=()=>{app.countMix=!app.countMix;$("countMix").textContent=`AUTO HEADROOM: ${app.countMix?"ON":"OFF"}`;$("countMix").classList.toggle("active",app.countMix);updateAudioLevels()};
 
 buildOrchestra();buildSpecialBanks();buildLanes();updateLaneUI();updateOrchUI();updateSwarmUI();$("speedOut").textContent=timingLabel();$("scanTiming").textContent=timingLabel().toUpperCase();
-loadMainSet();
+Promise.all([loadMainSet(),loadExtraBanks()]).then(maybeReadyToArm);
 </script>
 </body>
 </html>
