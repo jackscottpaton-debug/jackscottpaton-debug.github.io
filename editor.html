@@ -1,184 +1,541 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jack Paton — Site Editor</title>
-  <link rel="stylesheet" href="editor.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jack Paton — Drag Editor v3</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:Arial,Helvetica,sans-serif;background:#f2f2ef;color:#111}
+button,input,textarea,select{font:inherit}
+.editor-head{position:sticky;top:0;z-index:10000;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 12px;background:#fff;border-bottom:1px solid #bbb}
+.editor-head .title{display:flex;gap:10px;align-items:baseline}.editor-head small{color:#666}
+.actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.actions button,.tool-row button,.inspector button,.file-button{border:1px solid #999;background:#fff;padding:6px 9px;cursor:pointer;border-radius:2px;color:#111;text-decoration:none}
+.actions .primary{background:#111;color:#fff;border-color:#111}
+.file-button{display:inline-flex;align-items:center}.file-button input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.shell{display:grid;grid-template-columns:minmax(0,1fr) 350px;align-items:start}
+.canvas-col{padding:10px;min-width:0}
+.tool-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12px}
+.tool-row label{display:flex;align-items:center;gap:5px}.tool-row input[type=number]{width:90px}.tool-row input[type=color]{width:36px;height:28px;padding:1px}
+#status{margin-left:auto;color:#666}
+.viewport{background:#d9d9d5;border:1px solid #aaa;overflow:auto;max-height:calc(100vh - 105px);padding:12px}
+.canvas-wrap{position:relative;margin:0 auto;background:#fff;box-shadow:0 0 0 1px #aaa}
+#canvas{position:absolute;left:0;top:0;transform-origin:top left;background:#fff}
+.obj{position:absolute;user-select:none;touch-action:none}
+.obj.editor-selectable{cursor:grab}.obj.editor-selectable:active{cursor:grabbing}
+.obj.selected{outline:2px solid #1557ff;outline-offset:3px}
+.obj-text{white-space:pre-wrap;overflow:hidden}
+.obj-text.inline-editing{cursor:text!important;user-select:text;outline:2px dashed #ff3b00;overflow:auto}
+.obj-image img{display:block;width:100%;height:100%;pointer-events:none}
+.obj-box{pointer-events:auto}
+.obj-nav table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}
+.obj-nav td{text-align:center;vertical-align:middle;padding:0 3px}
+.obj-nav a{color:inherit;text-decoration:underline;pointer-events:none}
+.resize-handle{position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:#1557ff;border:2px solid #fff;box-shadow:0 0 0 1px #1557ff;cursor:nwse-resize;z-index:100000}
+.inline-hint{position:absolute;left:0;top:-20px;background:#fff;border:1px solid #999;padding:2px 4px;font:10px Arial,sans-serif;color:#333;display:none;white-space:nowrap}
+.obj-text.selected .inline-hint{display:block}
+.inspector{position:sticky;top:48px;height:calc(100vh - 48px);overflow:auto;background:#fff;border-left:1px solid #bbb;padding:12px}
+.inspector h2{font-size:14px;margin:0 0 9px}.inspector h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#666;margin:18px 0 8px}
+.inspector label{display:block;font-size:12px;margin:0 0 9px}
+.inspector input[type=text],.inspector input[type=number],.inspector textarea,.inspector select{display:block;width:100%;margin-top:4px;border:1px solid #aaa;padding:5px;background:#fff}
+.inspector input[type=color]{display:block;width:100%;height:31px;margin-top:4px;border:1px solid #aaa;padding:2px;background:#fff}
+.inspector textarea{resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.inspector hr{border:0;border-top:1px solid #ddd;margin:15px 0}
+.row{display:flex;gap:5px;flex-wrap:wrap}.danger{color:#a00;border-color:#a00!important}
+.note{font-size:11px;color:#666;line-height:1.35}
+.asset-library{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:295px;overflow:auto;padding:2px;margin-bottom:8px}
+.asset-card{border:1px solid #bbb;background:#fafafa;padding:0;cursor:pointer;min-width:0}
+.asset-card:hover{outline:2px solid #1557ff;outline-offset:1px}
+.asset-card img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#eee}
+.asset-card span{display:block;font-size:9px;line-height:1.15;padding:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-cell{border-top:1px solid #ddd;padding-top:8px;margin-top:8px}
+.nav-cell strong{font-size:11px}
+
+.html-importer{border:1px solid #bbb;background:#f7f7f5;padding:8px;margin-bottom:10px}
+.html-importer textarea{width:100%;min-height:90px;border:1px solid #aaa;padding:5px;font:11px "Courier New",monospace;resize:vertical;background:#fff}
+.html-importer .import-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.html-importer .import-status{font-size:10px;color:#666;margin-top:5px;line-height:1.3}
+
+@media(max-width:950px){.shell{grid-template-columns:1fr}.inspector{position:relative;top:auto;height:auto;border-left:0;border-top:1px solid #bbb}.viewport{max-height:none}}
+</style>
 </head>
 <body>
-  <header class="editor-head">
-    <div><strong>Site editor</strong><span>Everything on the homepage is an object. Drag it, resize it, restyle it.</span></div>
-    <div class="head-actions">
-      <button id="preview-site" type="button">Preview current layout ↗</button>
-      <button id="add-text" type="button">+ Add text</button>
-      <label class="file-button">+ Add image from Mac<input id="add-local-image" type="file" accept="image/*,.gif"></label>
-      <button id="add-item" type="button">+ Blank image</button>
-      <button id="download-layout" type="button">Download layout.js</button>
-      <button id="publish-layout" type="button" class="primary">Publish to website</button>
+<header class="editor-head">
+  <div class="title"><strong>Site editor</strong><small>drag / resize / double-click text to type</small></div>
+  <div class="actions">
+    <button id="open-preview">Open clean preview ↗</button>
+    <button id="download-site" class="primary">Download site HTML</button>
+    <button id="reset">Reset</button>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="canvas-col">
+    <div class="tool-row">
+      <button id="add-text">+ Text</button>
+      <label class="file-button">+ Image from Mac<input id="add-local-image" type="file" accept="image/*"></label>
+      <button id="add-image-url">+ Blank image</button>
+      <button id="add-box">+ Box</button>
+      <button id="add-nav">+ Nav bar</button>
+      <label>Page height <input id="page-height" type="number" min="800" step="100"></label>
+      <button id="add-height">+500px</button>
+      <label>Page <input id="page-colour" type="color"></label>
+      <span id="status">Click an object on the page.</span>
     </div>
-  </header>
+    <div class="viewport">
+      <div id="canvas-wrap" class="canvas-wrap"><div id="canvas"></div></div>
+    </div>
+  </section>
 
-  <main class="editor-shell">
-    <section class="canvas-column">
-      <div class="canvas-tools">
-        <label>Page height <input id="page-height" type="number" min="1000" step="100"></label>
-        <button id="add-height" type="button">+ 1000px</button>
-        <label>Page colour <input id="page-colour" type="color"></label>
-        <span id="status">Select something to edit it.</span>
+  <aside class="inspector">
+    <h2>Cloudinary images</h2>
+    <p class="note">Click a thumbnail to add it; if an image is selected, clicking replaces that image.</p>
+
+    <div class="html-importer">
+      <strong style="font-size:12px">Import images from HTML</strong>
+      <p class="note" style="margin:5px 0">Paste HTML containing Cloudinary images. The editor extracts the image URLs and adds them to this library.</p>
+      <textarea id="html-import" placeholder='<img src="https://res.cloudinary.com/.../photo.jpg">'></textarea>
+      <div class="import-row">
+        <button id="import-html" type="button">Import pasted HTML</button>
+        <label class="file-button">Import .html file<input id="import-html-file" type="file" accept=".html,.htm,text/html"></label>
+        <button id="clear-imported" type="button">Clear imported</button>
       </div>
-      <div id="editor-canvas" class="editor-canvas" aria-label="Homepage layout"></div>
-    </section>
+      <div id="import-status" class="import-status">Your original site images are already included below.</div>
+    </div>
 
-    <aside class="inspector" id="inspector">
-      <section class="library-section">
-        <div class="library-head">
-          <h2>Images already on GitHub</h2>
-          <button id="refresh-library" type="button">Refresh</button>
+    <div id="asset-library" class="asset-library"></div>
+
+    <hr>
+    <h2>Selected object</h2>
+    <p id="none-selected" class="note">Click any text, image, box or navigation bar. <b>Double-click text to type directly into it.</b></p>
+
+    <div id="object-fields" hidden>
+      <strong id="selected-type"></strong>
+      <h3>Position & size</h3>
+      <div class="grid2">
+        <label>X<input id="f-x" type="number"></label>
+        <label>Y<input id="f-y" type="number"></label>
+        <label>Width<input id="f-width" type="number" min="20"></label>
+        <label>Height<input id="f-height" type="number" min="20"></label>
+      </div>
+      <div class="grid2">
+        <label>Layer<input id="f-z" type="number"></label>
+        <label>Opacity<input id="f-opacity" type="number" min="0" max="1" step="0.05"></label>
+      </div>
+
+      <section id="fields-text" hidden>
+        <h3>Text styling</h3>
+        <p class="note">You can edit the words here too, but normally just double-click the text on the page.</p>
+        <label>Content<textarea id="t-text" rows="5"></textarea></label>
+        <label>Font<input id="t-fontFamily" type="text"></label>
+        <div class="grid2">
+          <label>Font size<input id="t-fontSize" type="number" min="5"></label>
+          <label>Weight<input id="t-fontWeight" type="number" min="100" max="900" step="100"></label>
         </div>
-        <p class="library-help">Click a thumbnail to add it. If an image is already selected, clicking a thumbnail replaces it.</p>
-        <div id="asset-library-status" class="library-status">Loading image library…</div>
-        <div id="asset-library" class="asset-library"></div>
+        <div class="grid2">
+          <label>Colour<input id="t-color" type="color"></label>
+          <label>Background<input id="t-background" type="text" placeholder="transparent or #fff"></label>
+        </div>
+        <div class="grid2">
+          <label>Alignment<select id="t-align"><option>left</option><option>center</option><option>right</option></select></label>
+          <label>Line height<input id="t-lineHeight" type="number" min="0.5" max="5" step="0.05"></label>
+        </div>
+      </section>
+
+      <section id="fields-image" hidden>
+        <h3>Image</h3>
+        <label>Image URL<input id="i-src" type="text"></label>
+        <div class="grid2">
+          <label>Border px<input id="i-borderWidth" type="number" min="0" max="20"></label>
+          <label>Border colour<input id="i-borderColor" type="color"></label>
+        </div>
+        <label>Fit<select id="i-fit"><option value="cover">cover</option><option value="contain">contain</option><option value="fill">fill</option></select></label>
+      </section>
+
+      <section id="fields-box" hidden>
+        <h3>Box</h3>
+        <div class="grid2">
+          <label>Border px<input id="b-borderWidth" type="number" min="0" max="20"></label>
+          <label>Border colour<input id="b-borderColor" type="color"></label>
+        </div>
+        <label>Background<input id="b-background" type="text" placeholder="transparent or #fff"></label>
+      </section>
+
+      <section id="fields-nav" hidden>
+        <h3>Navigation bar</h3>
+        <p class="note">For each cell, choose an object under <b>Jump to</b>. The live site will scroll to that object on this same page. Use External link only when Jump to is blank.</p>
+        <label>Font<input id="n-fontFamily" type="text"></label>
+        <div class="grid2">
+          <label>Font size<input id="n-fontSize" type="number" min="5"></label>
+          <label>Text colour<input id="n-color" type="color"></label>
+        </div>
+        <div class="grid2">
+          <label>Border px<input id="n-borderWidth" type="number" min="0" max="20"></label>
+          <label>Border colour<input id="n-borderColor" type="color"></label>
+        </div>
+        <label>Background<input id="n-background" type="text"></label>
+        <div id="nav-cells"></div>
       </section>
 
       <hr>
-      <h2>Selected object</h2>
-      <p id="no-selection">Click any text or image on the page.</p>
-
-      <div id="fields" hidden>
-        <section id="text-fields" hidden>
-          <label>Text <textarea id="f-text" rows="4"></textarea></label>
-          <label>Scroll to position on this homepage
-            <select id="f-scroll-target">
-              <option value="">— use normal link instead —</option>
-              <option value="__top__">Top of page</option>
-            </select>
-          </label>
-          <small>Choose any text or image on the homepage. If that object moves later, this button will still follow it.</small>
-          <label>External link / email <input id="f-text-link" type="text" placeholder="https://... or mailto:..."></label>
-          <small>This is only used when “Scroll to position” is blank.</small>
-          <label class="check"><input id="f-new-tab" type="checkbox"> Open external link in new tab</label>
-
-          <h3>Typography</h3>
-          <label>Font
-            <input id="f-font-family" type="text" list="font-list" placeholder="Arial, Helvetica, sans-serif">
-            <datalist id="font-list">
-              <option value="Arial, Helvetica, sans-serif">
-              <option value="Helvetica, Arial, sans-serif">
-              <option value="Times New Roman, Times, serif">
-              <option value="Georgia, serif">
-              <option value="Garamond, serif">
-              <option value="Courier New, Courier, monospace">
-              <option value="Verdana, sans-serif">
-              <option value="Trebuchet MS, sans-serif">
-              <option value="monospace">
-              <option value="serif">
-              <option value="sans-serif">
-            </datalist>
-          </label>
-          <div class="numbers three">
-            <label>Font size <input id="f-font-size" type="number" min="5" step="1"></label>
-            <label>Line height <input id="f-line-height" type="number" min="0.5" max="5" step="0.05"></label>
-            <label>Letter space <input id="f-letter-spacing" type="number" step="0.1"></label>
-          </div>
-          <div class="colour-row">
-            <label>Text colour <input id="f-color" type="color"></label>
-            <label>Background <input id="f-background" type="color"></label>
-          </div>
-          <label class="check"><input id="f-background-enabled" type="checkbox"> Use background colour</label>
-          <div class="numbers three">
-            <label>Weight <input id="f-font-weight" type="number" min="100" max="900" step="100"></label>
-            <label>Rotation ° <input id="f-text-rotation" type="number" step="1"></label>
-            <label>Opacity <input id="f-text-opacity" type="number" min="0" max="1" step="0.05"></label>
-          </div>
-          <label>Alignment
-            <select id="f-align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select>
-          </label>
-          <div class="checks-row">
-            <label class="check"><input id="f-italic" type="checkbox"> Italic</label>
-            <label class="check"><input id="f-underline" type="checkbox"> Underline</label>
-          </div>
-        </section>
-
-        <section id="media-fields" hidden>
-          <div class="local-file-box">
-            <strong>Replace this image from your Mac</strong>
-            <input id="f-local-file" type="file" accept="image/*,.gif">
-            <p id="prepared-file-note">Choose a large photo here and the editor will make a smaller web copy for you.</p>
-            <button id="download-selected-image" type="button" disabled>Download web copy</button>
-          </div>
-
-          <label>Title <input id="f-title" type="text"></label>
-          <label>Caption <textarea id="f-caption" rows="3"></textarea></label>
-          <label>Image / GIF path <input id="f-src" type="text" placeholder="assets/photo.jpg"></label>
-          <label>Type
-            <select id="f-type"><option value="image">Still image</option><option value="gif">GIF</option><option value="video">Video thumbnail</option></select>
-          </label>
-          <label>Hover image <input id="f-hover" type="text" placeholder="assets/other-photo.jpg"></label>
-          <small>Leave blank for no hover change.</small>
-          <label class="check"><input id="f-caption-show" type="checkbox"> Show caption</label>
-          <label class="check"><input id="f-clickable" type="checkbox"> Clickable</label>
-          <label>Click / video URL <input id="f-link" type="text" placeholder="https://..."></label>
-          <div class="numbers">
-            <label>Rotation ° <input id="f-media-rotation" type="number" step="1"></label>
-            <label>Opacity <input id="f-media-opacity" type="number" min="0" max="1" step="0.05"></label>
-          </div>
-
-          <h3>Caption style</h3>
-          <label>Caption font <input id="f-caption-font" type="text" list="font-list"></label>
-          <div class="numbers">
-            <label>Caption size <input id="f-caption-size" type="number" min="5" step="1"></label>
-            <label>Caption colour <input id="f-caption-color" type="color"></label>
-          </div>
-          <label>Caption alignment
-            <select id="f-caption-align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select>
-          </label>
-        </section>
-
-        <h3>Position & size</h3>
-        <div class="numbers">
-          <label>X <input id="f-x" type="number" step="1"></label>
-          <label>Y <input id="f-y" type="number" step="1"></label>
-          <label>Width <input id="f-width" type="number" step="1" min="20"></label>
-          <label>Layer <input id="f-z" type="number" step="1"></label>
-        </div>
-        <div class="row-buttons">
-          <button id="bring-front" type="button">Bring to front</button>
-          <button id="duplicate" type="button">Duplicate</button>
-          <button id="delete-item" type="button" class="danger">Delete</button>
-        </div>
+      <div class="row">
+        <button id="bring-front">Bring to front</button>
+        <button id="duplicate">Duplicate</button>
+        <button id="delete" class="danger">Delete</button>
       </div>
+    </div>
+  </aside>
+</main>
+<script>
+(() => {
+const DEFAULT_STATE = {"designWidth": 1200, "pageHeight": 4600, "page": {"background": "#ffffff"}, "objects": [{"id": "nav-top", "type": "nav", "x": 20, "y": 20, "width": 1160, "height": 28, "z": 100, "borderWidth": 1, "borderColor": "#444444", "background": "#ffffff", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "cells": [{"text": "gigs", "scrollTarget": "box-live", "link": ""}, {"text": "about", "scrollTarget": "box-sister", "link": ""}, {"text": "cv", "scrollTarget": "box-text", "link": ""}, {"text": "contact", "scrollTarget": "", "link": "mailto:YOUR-EMAIL-HERE"}]}, {"id": "box-sister", "type": "box", "x": 20, "y": 145, "width": 1160, "height": 520, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "img-sister", "type": "image", "x": 55, "y": 215, "width": 125, "height": 125, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296175/IMG_2417.jpg", "borderWidth": 1, "borderColor": "#444444", "fit": "cover", "opacity": 1}, {"id": "title-sister", "type": "text", "x": 225, "y": 190, "width": 540, "height": 44, "z": 12, "text": "My Sister's Baby — GLARC", "fontFamily": "Courier New, Courier, monospace", "fontSize": 13, "color": "#444444", "background": "transparent", "fontWeight": 700, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "list-sister-a", "type": "text", "x": 225, "y": 255, "width": 330, "height": 210, "z": 12, "text": "still life\nstill life\nstill life\nstill life\nstill life\nstill life\nstill life\nstill life", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "list-sister-b", "type": "text", "x": 610, "y": 255, "width": 330, "height": 210, "z": 12, "text": "still life\nstill life\nstill life\nstill life\nstill life\nstill life\nstill life\nstill life", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "body-sister", "type": "text", "x": 35, "y": 550, "width": 760, "height": 40, "z": 12, "text": "MY SISTER'S BABY— GLARC", "fontFamily": "Courier New, Courier, monospace", "fontSize": 12, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.2, "opacity": 1}, {"id": "box-marilyn", "type": "box", "x": 20, "y": 820, "width": 1160, "height": 520, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "img-marilyn", "type": "image", "x": 55, "y": 890, "width": 125, "height": 125, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296233/a3543726286_10.jpg", "borderWidth": 1, "borderColor": "#444444", "fit": "cover", "opacity": 1}, {"id": "title-marilyn", "type": "text", "x": 225, "y": 865, "width": 600, "height": 46, "z": 12, "text": "Marilyn Monroe — All of Us", "fontFamily": "Courier New, Courier, monospace", "fontSize": 13, "color": "#444444", "background": "transparent", "fontWeight": 700, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "marilyn-a", "type": "text", "x": 225, "y": 930, "width": 330, "height": 180, "z": 12, "text": "image\nimage\nimage\nimage\nimage", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "marilyn-b", "type": "text", "x": 610, "y": 930, "width": 330, "height": 180, "z": 12, "text": "still life\nstill life\nstill life\nstill life", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "box-anarchy", "type": "box", "x": 20, "y": 1490, "width": 1160, "height": 560, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "img-anarchy", "type": "image", "x": 55, "y": 1560, "width": 125, "height": 125, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296817/motor_copy555.jpg", "borderWidth": 1, "borderColor": "#444444", "fit": "cover", "opacity": 1}, {"id": "title-anarchy", "type": "text", "x": 225, "y": 1535, "width": 520, "height": 44, "z": 12, "text": "Anarchy 99 mixtape", "fontFamily": "Courier New, Courier, monospace", "fontSize": 13, "color": "#444444", "background": "transparent", "fontWeight": 700, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "anarchy-a", "type": "text", "x": 225, "y": 1600, "width": 330, "height": 220, "z": 12, "text": "1.\n2.\n3.\n4.\n5.\n6.", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.25, "opacity": 1}, {"id": "anarchy-b", "type": "text", "x": 610, "y": 1600, "width": 330, "height": 220, "z": 12, "text": "7.\n8.\n9.\n10.\n11.\n12.", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.25, "opacity": 1}, {"id": "box-live", "type": "box", "x": 20, "y": 2190, "width": 1160, "height": 480, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "img-live", "type": "image", "x": 55, "y": 2260, "width": 125, "height": 125, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296233/sperm.jpg", "borderWidth": 1, "borderColor": "#444444", "fit": "cover", "opacity": 1, "link": "https://www.youtube.com/watch?v=NcV3_INcPbg"}, {"id": "title-live", "type": "text", "x": 225, "y": 2250, "width": 480, "height": 44, "z": 12, "text": "Performing live", "fontFamily": "Courier New, Courier, monospace", "fontSize": 13, "color": "#444444", "background": "transparent", "fontWeight": 700, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "video-live", "type": "text", "x": 225, "y": 2320, "width": 220, "height": 50, "z": 12, "text": "video", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.2, "opacity": 1}, {"id": "box-uri", "type": "box", "x": 20, "y": 2810, "width": 1160, "height": 620, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "img-uri", "type": "image", "x": 55, "y": 2880, "width": 125, "height": 125, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786297069/2026-03-12_19-37_2.jpg", "borderWidth": 1, "borderColor": "#444444", "fit": "cover", "opacity": 1}, {"id": "title-uri", "type": "text", "x": 225, "y": 2865, "width": 520, "height": 50, "z": 12, "text": "Uri Geller poster", "fontFamily": "Courier New, Courier, monospace", "fontSize": 16, "color": "#444444", "background": "transparent", "fontWeight": 700, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "uri-text", "type": "text", "x": 225, "y": 2945, "width": 350, "height": 130, "z": 12, "text": "Uri Geller poster.\n\nhammer / spoon / poster / book", "fontFamily": "Courier New, Courier, monospace", "fontSize": 10, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.2, "opacity": 1}, {"id": "img-hammer", "type": "image", "x": 690, "y": 2920, "width": 300, "height": 210, "z": 10, "src": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296237/hammer.png", "borderWidth": 1, "borderColor": "#444444", "fit": "contain", "opacity": 1}, {"id": "box-text", "type": "box", "x": 20, "y": 3610, "width": 1160, "height": 650, "z": 1, "borderWidth": 0, "borderColor": "#444444", "background": "transparent", "opacity": 1}, {"id": "text-a", "type": "text", "x": 55, "y": 3680, "width": 420, "height": 240, "z": 12, "text": "I MY WHOLE LIFE\nI MY WHOLE LIFE\nI MY WHOLE LIFE I\nMY WHOLE LIFE I\nMY WHOLE LIFE I", "fontFamily": "Courier New, Courier, monospace", "fontSize": 14, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}, {"id": "text-b", "type": "text", "x": 590, "y": 3680, "width": 500, "height": 300, "z": 12, "text": "YOU AND ME\nARE LIKE\nLAND AND SEA\nWE MEET AT BEACHES\n\nSOMETIMES", "fontFamily": "Courier New, Courier, monospace", "fontSize": 14, "color": "#444444", "background": "transparent", "fontWeight": 400, "align": "left", "lineHeight": 1.15, "opacity": 1}]};
+const BASE_CLOUDINARY_LIBRARY = [{"name": "a3543726286_10.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296233/a3543726286_10.jpg"}, {"name": "motor_copy555.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296817/motor_copy555.jpg"}, {"name": "sperm.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296233/sperm.jpg"}, {"name": "2026-03-12_19-37_2.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786297069/2026-03-12_19-37_2.jpg"}, {"name": "20250927-180636.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296712/20250927-180636.jpg"}, {"name": "20260228-185109.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786297781/20260228-185109.jpg"}, {"name": "Screenshot_2026-08-07_at_21.30.20.png", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786297307/Screenshot_2026-08-07_at_21.30.20.png"}, {"name": "hammer.png", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296237/hammer.png"}, {"name": "IMG_2417.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296175/IMG_2417.jpg"}, {"name": "411B892F-F12D-447F-B9E7-3AFB9FF62BAA.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786297082/411B892F-F12D-447F-B9E7-3AFB9FF62BAA.jpg"}, {"name": "hory_copy.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296767/hory_copy.jpg"}, {"name": "20260116-203804.jpg", "url": "https://res.cloudinary.com/ftbzogfu/image/upload/v1786296750/20260116-203804.jpg"}];
+let importedLibrary=[];
+try{ importedLibrary=JSON.parse(localStorage.getItem('jackPpImportedCloudinary')||'[]'); }catch(e){ importedLibrary=[]; }
+function dedupeLibrary(list){
+  const seen=new Set();
+  return list.filter(a=>{
+    if(!a || !a.url || seen.has(a.url)) return false;
+    seen.add(a.url); return true;
+  });
+}
+function currentLibrary(){ return dedupeLibrary([...BASE_CLOUDINARY_LIBRARY,...importedLibrary]); }
+let state;
+try{
+  const saved=localStorage.getItem('jackPpDragEditorV3');
+  state=saved?JSON.parse(saved):JSON.parse(JSON.stringify(DEFAULT_STATE));
+}catch(e){ state=JSON.parse(JSON.stringify(DEFAULT_STATE)); }
 
-      <hr>
-      <h2>Adding new photographs</h2>
-      <p><b>From your Mac:</b> use <b>+ Add image from Mac</b> at the top. Large still photos are automatically resized to a web-friendly WebP. Download that web copy and upload it to the <code>assets</code> folder on GitHub.</p>
-      <p><b>Already on GitHub:</b> use the thumbnail library at the top of this panel. You no longer need to type filenames.</p>
-      <h2>Single-page menu links</h2>
-      <p>Select a menu word such as <b>cv</b>, then use <b>Scroll to position on this homepage</b> and choose the object you want it to jump to. This replaces separate CV/About/Gigs pages without needing coordinates.</p>
-      <h2>Publishing</h2>
-      <div class="local-file-box" id="github-publish-box">
-        <strong>Publish directly to GitHub</strong>
-        <p>Paste a fine-grained GitHub token here once per browser tab. It stays in this tab only and is never written into <code>layout.js</code> or your repository.</p>
-        <label>GitHub token <input id="github-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
-        <small>Give the token access only to <b>jackscottpaton-debug.github.io</b>, with repository permission <b>Contents: Read and write</b>.</small>
-        <p id="publish-status">Then use <b>Publish to website</b> at the top. The download button remains as a backup.</p>
-      </div>
-      <p><b>Backup method:</b> Press <b>Download layout.js</b> and replace the old file manually on GitHub.</p>
-    </aside>
-  </main>
+const canvas=document.querySelector('#canvas');
+const wrap=document.querySelector('#canvas-wrap');
+const viewport=document.querySelector('.viewport');
+const status=document.querySelector('#status');
+let selectedId=null, gesture=null, scale=1, editingTextId=null;
 
-  <script>
-    (() => {
-      const stamp = Date.now();
-      const layoutScript = document.createElement('script');
-      layoutScript.src = `layout.js?v=${stamp}`;
-      layoutScript.onload = () => {
-        const editorScript = document.createElement('script');
-        editorScript.src = 'editor.js?v=8';
-        document.body.appendChild(editorScript);
-      };
-      document.body.appendChild(layoutScript);
-    })();
-  </script>
+const $=s=>document.querySelector(s);
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+const selected=()=>state.objects.find(o=>o.id===selectedId)||null;
+const maxZ=()=>Math.max(0,...state.objects.map(o=>Number(o.z)||0));
+const esc=(s='')=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function save(){try{localStorage.setItem('jackPpDragEditorV3',JSON.stringify(state));}catch(e){}}
+
+function calcScale(){
+  const available=Math.max(320,viewport.clientWidth-26);
+  scale=Math.min(1,available/state.designWidth);
+  wrap.style.width=(state.designWidth*scale)+'px';
+  wrap.style.height=(state.pageHeight*scale)+'px';
+  canvas.style.width=state.designWidth+'px';
+  canvas.style.height=state.pageHeight+'px';
+  canvas.style.transform=`scale(${scale})`;
+}
+function makeHandle(el){
+  const h=document.createElement('span');h.className='resize-handle';el.appendChild(h);
+}
+function renderObject(o){
+  const el=document.createElement('div');
+  el.className=`obj obj-${o.type} editor-selectable`;
+  el.dataset.id=o.id;
+  el.id='editor-'+o.id;
+  el.style.left=o.x+'px';el.style.top=o.y+'px';el.style.width=o.width+'px';el.style.height=o.height+'px';
+  el.style.zIndex=o.z||1;el.style.opacity=o.opacity??1;
+
+  if(o.type==='text'){
+    el.textContent=o.text||'';
+    el.style.fontFamily=o.fontFamily||'Courier New, Courier, monospace';
+    el.style.fontSize=(o.fontSize||12)+'px';
+    el.style.color=o.color||'#444';
+    el.style.background=o.background||'transparent';
+    el.style.fontWeight=o.fontWeight||400;
+    el.style.textAlign=o.align||'left';
+    el.style.lineHeight=o.lineHeight||1.2;
+    const hint=document.createElement('span');hint.className='inline-hint';hint.textContent='double-click to type';el.appendChild(hint);
+    el.addEventListener('dblclick',startInlineEdit);
+  }else if(o.type==='image'){
+    const img=document.createElement('img');img.src=o.src||'';img.alt=o.alt||'';
+    img.style.objectFit=o.fit||'cover';img.style.border=(o.borderWidth||0)+'px solid '+(o.borderColor||'#444');
+    el.appendChild(img);
+  }else if(o.type==='box'){
+    el.style.border=(o.borderWidth||0)+'px solid '+(o.borderColor||'#444');
+    el.style.background=o.background||'transparent';
+  }else if(o.type==='nav'){
+    el.style.fontFamily=o.fontFamily||'Courier New, Courier, monospace';
+    el.style.fontSize=(o.fontSize||10)+'px';el.style.color=o.color||'#444';el.style.background=o.background||'#fff';
+    const table=document.createElement('table'),tr=document.createElement('tr');
+    (o.cells||[]).forEach(c=>{
+      const td=document.createElement('td');td.style.border=(o.borderWidth||1)+'px solid '+(o.borderColor||'#444');
+      const a=document.createElement('a');a.href='#';a.textContent=c.text||'';td.appendChild(a);tr.appendChild(td);
+    });
+    table.appendChild(tr);el.appendChild(table);
+  }
+  if(o.id===selectedId) el.classList.add('selected');
+  makeHandle(el);
+  el.addEventListener('pointerdown',startGesture);
+  return el;
+}
+function render(){
+  calcScale();canvas.innerHTML='';canvas.style.background=state.page.background||'#fff';
+  state.objects.slice().sort((a,b)=>(a.z||1)-(b.z||1)).forEach(o=>canvas.appendChild(renderObject(o)));
+  $('#page-height').value=state.pageHeight;$('#page-colour').value=state.page.background||'#ffffff';
+  updateInspector();save();
+}
+function choose(id){
+  selectedId=id;
+  canvas.querySelectorAll('.obj').forEach(el=>el.classList.toggle('selected',el.dataset.id===id));
+  updateInspector();
+}
+function startGesture(e){
+  if(editingTextId) return;
+  const el=e.currentTarget;choose(el.dataset.id);const o=selected();if(!o)return;
+  e.preventDefault();el.setPointerCapture(e.pointerId);
+  gesture={id:o.id,action:e.target.classList.contains('resize-handle')?'resize':'move',
+           sx:e.clientX,sy:e.clientY,x:o.x,y:o.y,w:o.width,h:o.height,pointerId:e.pointerId};
+  el.addEventListener('pointermove',moveGesture);el.addEventListener('pointerup',endGesture);el.addEventListener('pointercancel',endGesture);
+}
+function moveGesture(e){
+  if(!gesture)return;const o=selected();if(!o)return;
+  const dx=(e.clientX-gesture.sx)/scale,dy=(e.clientY-gesture.sy)/scale;
+  if(gesture.action==='move'){
+    o.x=Math.round(clamp(gesture.x+dx,0,state.designWidth-o.width));
+    o.y=Math.round(clamp(gesture.y+dy,0,state.pageHeight-o.height));
+  }else{
+    o.width=Math.round(clamp(gesture.w+dx,20,state.designWidth-o.x));
+    o.height=Math.round(clamp(gesture.h+dy,20,state.pageHeight-o.y));
+  }
+  const el=canvas.querySelector(`[data-id="${CSS.escape(o.id)}"]`);
+  if(el){el.style.left=o.x+'px';el.style.top=o.y+'px';el.style.width=o.width+'px';el.style.height=o.height+'px';}
+  updateInspector(false);
+}
+function endGesture(e){
+  if(!gesture)return;
+  e.currentTarget.releasePointerCapture?.(gesture.pointerId);
+  e.currentTarget.removeEventListener('pointermove',moveGesture);e.currentTarget.removeEventListener('pointerup',endGesture);e.currentTarget.removeEventListener('pointercancel',endGesture);
+  gesture=null;save();
+}
+
+function startInlineEdit(e){
+  e.preventDefault();e.stopPropagation();
+  const el=e.currentTarget;const o=state.objects.find(x=>x.id===el.dataset.id);if(!o||o.type!=='text')return;
+  editingTextId=o.id;selectedId=o.id;
+  el.classList.add('inline-editing','selected');
+  const hint=el.querySelector('.inline-hint');if(hint)hint.remove();
+  el.contentEditable='true';el.focus();
+  const range=document.createRange();range.selectNodeContents(el);range.collapse(false);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+
+  const onInput=()=>{o.text=el.innerText.replace(/\r/g,'');save();const inspector=$('#t-text');if(inspector)inspector.value=o.text;};
+  const finish=()=>{
+    o.text=el.innerText.replace(/\r/g,'');
+    editingTextId=null;el.contentEditable='false';el.removeEventListener('input',onInput);el.removeEventListener('blur',finish);el.removeEventListener('keydown',onKey);
+    render();selectedId=o.id;choose(o.id);
+  };
+  const onKey=(ev)=>{if(ev.key==='Escape'){ev.preventDefault();finish();}};
+  el.addEventListener('input',onInput);el.addEventListener('blur',finish);el.addEventListener('keydown',onKey);
+}
+function renderKeepSelection(){const id=selectedId;render();selectedId=id;if(id)choose(id);}
+
+function objectChoices(currentNavId){
+  const list=[{id:'__top__',label:'Top of page'}];
+  state.objects.filter(o=>o.id!==currentNavId).slice().sort((a,b)=>a.y-b.y).forEach(o=>{
+    let name=o.id;
+    if(o.type==='text' && o.text) name=o.text.replace(/\s+/g,' ').slice(0,42);
+    if(o.type==='image') name='IMAGE — '+(o.src.split('/').pop()||o.id);
+    if(o.type==='box') name='BOX — '+o.id;
+    if(o.type==='nav') name='NAV — '+o.id;
+    list.push({id:o.id,label:`${Math.round(o.y)}px · ${name}`});
+  });
+  return list;
+}
+
+const commonKeys=['x','y','width','height','z','opacity'];
+function updateInspector(resetFields=true){
+  const o=selected();$('#none-selected').hidden=!!o;$('#object-fields').hidden=!o;
+  if(!o){status.textContent='Click an object on the page.';return;}
+  $('#selected-type').textContent=o.type.toUpperCase();
+  if(resetFields){
+    commonKeys.forEach(k=>{const el=$('#f-'+k);if(el)el.value=o[k]??'';});
+    ['text','image','box','nav'].forEach(t=>$('#fields-'+t).hidden=o.type!==t);
+    if(o.type==='text'){
+      ['text','fontFamily','fontSize','color','background','fontWeight','align','lineHeight'].forEach(k=>$('#t-'+k).value=o[k]??'');
+    }else if(o.type==='image'){
+      ['src','borderWidth','borderColor','fit'].forEach(k=>$('#i-'+k).value=o[k]??'');
+    }else if(o.type==='box'){
+      ['borderWidth','borderColor','background'].forEach(k=>$('#b-'+k).value=o[k]??'');
+    }else if(o.type==='nav'){
+      ['fontFamily','fontSize','color','background','borderWidth','borderColor'].forEach(k=>$('#n-'+k).value=o[k]??'');
+      const host=$('#nav-cells');host.innerHTML='';
+      const choices=objectChoices(o.id);
+      (o.cells||[]).forEach((c,i)=>{
+        const d=document.createElement('div');d.className='nav-cell';
+        const opts=['<option value="">— no page jump —</option>'].concat(choices.map(ch=>`<option value="${esc(ch.id)}"${c.scrollTarget===ch.id?' selected':''}>${esc(ch.label)}</option>`)).join('');
+        d.innerHTML=`<strong>Cell ${i+1}</strong>
+          <div class="grid2">
+            <label>Text<input data-i="${i}" data-k="text" type="text" value="${esc(c.text)}"></label>
+            <label>Jump to<select data-i="${i}" data-k="scrollTarget">${opts}</select></label>
+          </div>
+          <label>External link / email <input data-i="${i}" data-k="link" type="text" value="${esc(c.link||'')}" placeholder="used only when Jump to is blank"></label>`;
+        host.appendChild(d);
+      });
+      host.querySelectorAll('input,select').forEach(inp=>inp.addEventListener(inp.tagName==='SELECT'?'change':'input',ev=>{
+        const oo=selected();if(!oo||oo.type!=='nav')return;
+        const i=Number(ev.target.dataset.i),k=ev.target.dataset.k;
+        oo.cells[i][k]=ev.target.value;
+        if(k==='scrollTarget' && ev.target.value) oo.cells[i].link='';
+        renderKeepSelection();
+      }));
+    }
+  }
+  status.textContent=`${o.type}: ${o.id} — x ${o.x}, y ${o.y}, ${o.width}×${o.height}`;
+}
+
+commonKeys.forEach(k=>$('#f-'+k).addEventListener('input',()=>{
+  const o=selected();if(!o)return;o[k]=Number($('#f-'+k).value)||0;renderKeepSelection();
+}));
+function bindGroup(prefix,keys,type){
+  keys.forEach(k=>{
+    const el=$(`#${prefix}-${k}`);if(!el)return;const ev=el.tagName==='SELECT'?'change':'input';
+    el.addEventListener(ev,()=>{const o=selected();if(!o||o.type!==type)return;o[k]=el.type==='number'?Number(el.value):el.value;renderKeepSelection();});
+  });
+}
+bindGroup('t',['text','fontFamily','fontSize','color','background','fontWeight','align','lineHeight'],'text');
+bindGroup('i',['src','borderWidth','borderColor','fit'],'image');
+bindGroup('b',['borderWidth','borderColor','background'],'box');
+bindGroup('n',['fontFamily','fontSize','color','background','borderWidth','borderColor'],'nav');
+
+$('#page-height').addEventListener('change',()=>{state.pageHeight=Math.max(800,Number($('#page-height').value)||state.pageHeight);render();});
+$('#add-height').addEventListener('click',()=>{state.pageHeight+=500;render();});
+$('#page-colour').addEventListener('input',()=>{state.page.background=$('#page-colour').value;render();});
+
+function visibleY(){return Math.max(40,Math.round(viewport.scrollTop/scale+70));}
+function addObject(o){state.objects.push(o);selectedId=o.id;render();choose(o.id);}
+$('#add-text').addEventListener('click',()=>addObject({
+ id:'text-'+Date.now(),type:'text',x:60,y:visibleY(),width:380,height:120,z:maxZ()+1,opacity:1,
+ text:'New text',fontFamily:'Courier New, Courier, monospace',fontSize:12,color:'#444444',background:'transparent',fontWeight:400,align:'left',lineHeight:1.2
+}));
+$('#add-box').addEventListener('click',()=>addObject({
+ id:'box-'+Date.now(),type:'box',x:40,y:visibleY(),width:700,height:240,z:1,opacity:1,borderWidth:1,borderColor:'#444444',background:'transparent'
+}));
+$('#add-image-url').addEventListener('click',()=>addObject({
+ id:'image-'+Date.now(),type:'image',x:60,y:visibleY(),width:180,height:160,z:maxZ()+1,opacity:1,src:'',borderWidth:1,borderColor:'#444444',fit:'cover'
+}));
+$('#add-nav').addEventListener('click',()=>addObject({
+ id:'nav-'+Date.now(),type:'nav',x:20,y:visibleY(),width:1160,height:28,z:maxZ()+1,opacity:1,borderWidth:1,borderColor:'#444444',
+ background:'#ffffff',fontFamily:'Courier New, Courier, monospace',fontSize:10,color:'#444444',
+ cells:[{text:'gigs',scrollTarget:'',link:''},{text:'about',scrollTarget:'',link:''},{text:'cv',scrollTarget:'',link:''},{text:'contact',scrollTarget:'',link:''}]
+}));
+
+$('#add-local-image').addEventListener('change',e=>{
+  const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();
+  reader.onload=()=>addObject({id:'image-'+Date.now(),type:'image',x:60,y:visibleY(),width:220,height:180,z:maxZ()+1,opacity:1,src:reader.result,borderWidth:1,borderColor:'#444444',fit:'cover'});
+  reader.readAsDataURL(file);e.target.value='';
+});
+
+function renderLibrary(){
+  const host=$('#asset-library');host.innerHTML='';
+  currentLibrary().forEach(asset=>{
+    const b=document.createElement('button');b.type='button';b.className='asset-card';
+    const im=document.createElement('img');im.src=asset.url;im.alt=asset.name;im.loading='lazy';
+    const sp=document.createElement('span');sp.textContent=asset.name;b.append(im,sp);
+    b.addEventListener('click',()=>{
+      const o=selected();
+      if(o && o.type==='image'){
+        o.src=asset.url;renderKeepSelection();
+      }else{
+        addObject({id:'image-'+Date.now(),type:'image',x:60,y:visibleY(),width:220,height:180,z:maxZ()+1,opacity:1,src:asset.url,borderWidth:1,borderColor:'#444444',fit:'cover'});
+      }
+    });
+    host.appendChild(b);
+  });
+}
+
+function cloudinaryUrlsFromHtml(source){
+  if(!source) return [];
+  const found=[];
+  try{
+    const doc=new DOMParser().parseFromString(source,'text/html');
+    const attrs=['src','href','data-src','data-original'];
+    doc.querySelectorAll('*').forEach(el=>{
+      attrs.forEach(attr=>{
+        const v=el.getAttribute?.(attr);
+        if(v && /https?:\/\/res\.cloudinary\.com\//i.test(v)) found.push(v);
+      });
+      const srcset=el.getAttribute?.('srcset');
+      if(srcset){
+        srcset.split(',').forEach(part=>{
+          const u=part.trim().split(/\s+/)[0];
+          if(/https?:\/\/res\.cloudinary\.com\//i.test(u)) found.push(u);
+        });
+      }
+    });
+  }catch(e){}
+  // Also catch Cloudinary URLs present in raw scripts / escaped markup.
+  const rawMatches=source.match(/https?:\/\/res\.cloudinary\.com\/[^\s"'<>\\]+/gi)||[];
+  rawMatches.forEach(u=>found.push(u.replace(/&amp;/g,'&')));
+  return [...new Set(found)];
+}
+function assetNameFromUrl(url){
+  try{
+    const clean=url.split('?')[0].split('#')[0];
+    return decodeURIComponent(clean.split('/').pop()||'cloudinary-image');
+  }catch(e){ return 'cloudinary-image'; }
+}
+function importHtmlSource(source){
+  const urls=cloudinaryUrlsFromHtml(source);
+  if(!urls.length){
+    $('#import-status').textContent='No Cloudinary image URLs found in that HTML.';
+    return;
+  }
+  const before=new Set(currentLibrary().map(a=>a.url));
+  const additions=urls.filter(u=>!before.has(u)).map(u=>({name:assetNameFromUrl(u),url:u}));
+  importedLibrary=dedupeLibrary([...importedLibrary,...additions]);
+  try{localStorage.setItem('jackPpImportedCloudinary',JSON.stringify(importedLibrary));}catch(e){}
+  renderLibrary();
+  $('#import-status').textContent=additions.length
+    ? `Imported ${additions.length} new image${additions.length===1?'':'s'}. ${urls.length-additions.length} duplicate${urls.length-additions.length===1?'':'s'} ignored.`
+    : `Found ${urls.length} Cloudinary image${urls.length===1?'':'s'}, but they were already in the library.`;
+}
+$('#import-html').addEventListener('click',()=>importHtmlSource($('#html-import').value));
+$('#import-html-file').addEventListener('change',async e=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  const source=await file.text();
+  $('#html-import').value=source;
+  importHtmlSource(source);
+  e.target.value='';
+});
+$('#clear-imported').addEventListener('click',()=>{
+  if(!importedLibrary.length){$('#import-status').textContent='There are no imported images to clear.';return;}
+  if(!confirm('Clear all images imported from HTML? The original site images will remain.')) return;
+  importedLibrary=[];
+  try{localStorage.removeItem('jackPpImportedCloudinary');}catch(e){}
+  renderLibrary();
+  $('#import-status').textContent='Imported image list cleared. Original site images remain.';
+});
+
+renderLibrary();
+
+$('#duplicate').addEventListener('click',()=>{const o=selected();if(!o)return;const c=JSON.parse(JSON.stringify(o));c.id=o.type+'-'+Date.now();c.x+=25;c.y+=25;c.z=maxZ()+1;addObject(c);});
+$('#bring-front').addEventListener('click',()=>{const o=selected();if(!o)return;o.z=maxZ()+1;renderKeepSelection();});
+$('#delete').addEventListener('click',()=>{const o=selected();if(!o)return;if(!confirm('Delete this object?'))return;state.objects=state.objects.filter(x=>x.id!==o.id);selectedId=null;render();});
+
+function siteHTML(){
+  const data=JSON.stringify(state).replace(/</g,'\\u003c');
+  const siteCss=`*{box-sizing:border-box}html{scroll-behavior:smooth}html,body{margin:0;min-height:100%}body{overflow-x:hidden}.site-canvas{position:relative;margin:0 auto}.sobj{position:absolute}.sobj-text{white-space:pre-wrap;overflow:hidden}.sobj-image img{display:block;width:100%;height:100%}.sobj-nav table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}.sobj-nav td{text-align:center;vertical-align:middle;padding:0 3px}.sobj-nav a{color:inherit;text-decoration:underline;cursor:pointer}`;
+  const siteJs=`const S=${data};document.body.style.background=S.page.background||'#fff';const C=document.getElementById('site-canvas');
+  function R(){C.innerHTML='';const k=Math.min(1,window.innerWidth/S.designWidth);C.style.width=S.designWidth+'px';C.style.height=S.pageHeight+'px';C.style.transform='scale('+k+')';C.style.transformOrigin='top left';C.parentElement.style.width=(S.designWidth*k)+'px';C.parentElement.style.height=(S.pageHeight*k)+'px';
+  S.objects.slice().sort((a,b)=>(a.z||1)-(b.z||1)).forEach(o=>{const el=document.createElement('div');el.id=o.id;el.className='sobj sobj-'+o.type;el.style.left=o.x+'px';el.style.top=o.y+'px';el.style.width=o.width+'px';el.style.height=o.height+'px';el.style.zIndex=o.z||1;el.style.opacity=o.opacity??1;
+  if(o.type==='text'){el.textContent=o.text||'';el.style.fontFamily=o.fontFamily;el.style.fontSize=(o.fontSize||12)+'px';el.style.color=o.color;el.style.background=o.background||'transparent';el.style.fontWeight=o.fontWeight||400;el.style.textAlign=o.align||'left';el.style.lineHeight=o.lineHeight||1.2;}
+  else if(o.type==='image'){const im=document.createElement('img');im.src=o.src||'';im.alt='';im.style.objectFit=o.fit||'cover';im.style.border=(o.borderWidth||0)+'px solid '+(o.borderColor||'#444');if(o.link){const a=document.createElement('a');a.href=o.link;a.appendChild(im);el.appendChild(a)}else el.appendChild(im);}
+  else if(o.type==='box'){el.style.border=(o.borderWidth||0)+'px solid '+(o.borderColor||'#444');el.style.background=o.background||'transparent';}
+  else if(o.type==='nav'){el.style.fontFamily=o.fontFamily;el.style.fontSize=(o.fontSize||10)+'px';el.style.color=o.color;el.style.background=o.background||'#fff';const t=document.createElement('table'),tr=document.createElement('tr');(o.cells||[]).forEach(c=>{const td=document.createElement('td');td.style.border=(o.borderWidth||1)+'px solid '+(o.borderColor||'#444');const a=document.createElement('a');a.href=c.scrollTarget?(c.scrollTarget==='__top__'?'#top':'#'+c.scrollTarget):(c.link||'#');a.textContent=c.text||'';if(c.scrollTarget){a.addEventListener('click',ev=>{ev.preventDefault();if(c.scrollTarget==='__top__'){window.scrollTo({top:0,behavior:'smooth'});return;}const target=document.getElementById(c.scrollTarget);if(target){const scaleNow=Math.min(1,window.innerWidth/S.designWidth);window.scrollTo({top:target.offsetTop*scaleNow,behavior:'smooth'});}})}td.appendChild(a);tr.appendChild(td)});t.appendChild(tr);el.appendChild(t)}C.appendChild(el)});}
+  R();window.addEventListener('resize',R);`;
+  return `<!doctype html><html id="top"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jack Paton</title><style>${siteCss}</style></head><body><div id="site-wrap" style="margin:0 auto;position:relative"><div id="site-canvas" class="site-canvas"></div></div><script>${siteJs.replace(/<\/script/gi,'<\\/script')}<\/script></body></html>`;
+}
+$('#download-site').addEventListener('click',()=>{const blob=new Blob([siteHTML()],{type:'text/html'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='index.html';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);});
+$('#open-preview').addEventListener('click',()=>{const blob=new Blob([siteHTML()],{type:'text/html'}),u=URL.createObjectURL(blob),w=window.open(u,'jack-clean-preview');if(w)w.focus();setTimeout(()=>URL.revokeObjectURL(u),60000);});
+$('#reset').addEventListener('click',()=>{if(!confirm('Reset editor to the starting layout?'))return;state=JSON.parse(JSON.stringify(DEFAULT_STATE));selectedId=null;render();});
+window.addEventListener('resize',render);render();
+})();
+</script>
 </body>
 </html>
